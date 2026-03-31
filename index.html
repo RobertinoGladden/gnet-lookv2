@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="description" content="GNet Analyzer — Drive Test LTE Analyzer untuk G-NetTrack Pro">
+<title>GNet Analyzer — LTE Drive Test Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/upload.css">
+</head>
+<body class="upload-page">
+
+<!-- ANIMATED BG -->
+<div class="bg-canvas" id="bgCanvas"></div>
+<div class="bg-grid"></div>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">GNET<span class="logo-accent">ANALYZER</span></span>
+    </a>
+    <div class="header-right">
+      <span class="version-badge">v3.0</span>
+      <a href="https://github.com" target="_blank" class="github-btn" title="GitHub">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<main class="upload-main">
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <span class="pulse-dot"></span>
+      G-NetTrack Pro · LTE Drive Test Analyzer
+    </div>
+    <h1 class="hero-title">
+      <span class="line-1">GNET</span>
+      <span class="line-2">ANALYZER</span>
+    </h1>
+    <p class="hero-desc">
+      Import file <code>.txt</code> G-NetTrack Pro & <code>.kml</code> Events. Dapatkan grafik, peta interaktif, distribusi parameter, dan analisis handover secara otomatis.
+    </p>
+
+    <!-- FEATURE PILLS -->
+    <div class="feature-pills">
+      <span class="pill pill-cyan">📡 RSRP / RSRQ / SNR</span>
+      <span class="pill pill-amber">🗺 Peta Interaktif</span>
+      <span class="pill pill-purple">⇄ Handover Events</span>
+      <span class="pill pill-green">📊 Distribusi</span>
+      <span class="pill pill-red">⚠ Titik Rawan</span>
+      <span class="pill pill-cyan">⬇ Export PNG</span>
+    </div>
+  </div>
+
+  <!-- UPLOAD CARD -->
+  <div class="upload-card">
+    <div class="upload-card-inner">
+
+      <!-- TXT DROP ZONE -->
+      <div class="drop-zone" id="txtDrop" data-active="false">
+        <input type="file" id="txtInput" accept=".txt,.csv" multiple>
+        <div class="drop-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+        </div>
+        <h3 class="drop-title">Drop file G-NetTrack Pro</h3>
+        <p class="drop-sub">Format: <code>.txt</code> export dari G-NetTrack Pro · Bisa multi-file</p>
+        <button class="drop-btn" onclick="document.getElementById('txtInput').click()">
+          Pilih File .TXT
+        </button>
+        <div class="drop-formats">
+          <span class="fmt">G-NETTRACK .TXT</span>
+          <span class="fmt">MULTI FILE</span>
+          <span class="fmt">AUTO PARSE</span>
+        </div>
+      </div>
+
+      <div class="upload-divider">
+        <span>+</span>
+      </div>
+
+      <!-- KML DROP ZONE -->
+      <div class="drop-zone drop-zone-kml" id="kmlDrop" data-active="false">
+        <input type="file" id="kmlInput" accept=".kml">
+        <div class="drop-icon drop-icon-amber">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <h3 class="drop-title drop-title-sm">Events KML <span class="optional-tag">opsional</span></h3>
+        <p class="drop-sub">File <code>.kml</code> events G-NetTrack Pro</p>
+        <button class="drop-btn drop-btn-amber" onclick="document.getElementById('kmlInput').click()">
+          Pilih File .KML
+        </button>
+      </div>
+
+    </div>
+
+    <!-- STATUS -->
+    <div id="statusContainer" class="status-container" style="display:none">
+      <div id="statusTxt" class="status-item"></div>
+      <div id="statusKml" class="status-item status-item-amber" style="display:none"></div>
+    </div>
+
+    <!-- ANALYZE BUTTON -->
+    <div id="analyzeWrap" style="display:none">
+      <button class="analyze-btn" id="analyzeBtn" onclick="startAnalysis()">
+        <span class="analyze-btn-text">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Mulai Analisis
+        </span>
+        <span class="analyze-btn-arrow">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- HOW TO USE -->
+  <div class="howto">
+    <div class="howto-title">Cara Pakai</div>
+    <div class="howto-steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-text">Buka G-NetTrack Pro → Menu <strong>Session</strong> → Export <strong>.TXT</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-text">(Opsional) Export <strong>Events KML</strong> dari menu yang sama</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-text">Drop kedua file ke sini, klik <strong>Mulai Analisis</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-text">Grafik, peta, distribusi & tabel rawan otomatis ter-generate</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div>// GNET ANALYZER &nbsp;·&nbsp; Drive Test LTE Tool &nbsp;·&nbsp; G-NetTrack Pro Compatible &nbsp;·&nbsp; v3.0</div>
+</footer>
+
+<script src="js/parser.js"></script>
+<script src="js/upload.js"></script>
+</body>
+</html>

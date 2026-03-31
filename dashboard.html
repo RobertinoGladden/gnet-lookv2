@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>GNet Analyzer — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body class="dashboard-page">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <a href="index.html" class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">GNET<span class="logo-accent">ANLZ</span></span>
+    </a>
+    <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">✕</button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="#info" class="nav-item active" data-section="info">
+      <span class="nav-icon">ℹ</span>
+      <span class="nav-label">Info DT</span>
+    </a>
+    <a href="#cell" class="nav-item" data-section="cell">
+      <span class="nav-icon">📶</span>
+      <span class="nav-label">Serving Cell</span>
+    </a>
+    <a href="#kpi" class="nav-item" data-section="kpi">
+      <span class="nav-icon">📈</span>
+      <span class="nav-label">KPI</span>
+    </a>
+    <a href="#grafik" class="nav-item" data-section="grafik">
+      <span class="nav-icon">〰</span>
+      <span class="nav-label">Grafik</span>
+    </a>
+    <a href="#peta" class="nav-item" data-section="peta">
+      <span class="nav-icon">🗺</span>
+      <span class="nav-label">Peta Sinyal</span>
+    </a>
+    <a href="#events" class="nav-item" data-section="events" id="navEvents">
+      <span class="nav-icon">⇄</span>
+      <span class="nav-label">Events</span>
+      <span class="nav-badge" id="eventsBadge" style="display:none">0</span>
+    </a>
+    <a href="#distribusi" class="nav-item" data-section="distribusi">
+      <span class="nav-icon">▦</span>
+      <span class="nav-label">Distribusi</span>
+    </a>
+    <a href="#rawan" class="nav-item" data-section="rawan">
+      <span class="nav-icon">⚠</span>
+      <span class="nav-label">Titik Rawan</span>
+      <span class="nav-badge nav-badge-red" id="rawanBadge">0</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="index.html" class="back-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Upload Baru
+    </a>
+  </div>
+</aside>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="topbar-title" id="topbarTitle">Drive Test Analysis</div>
+  <div class="topbar-actions">
+    <div class="file-info-badge" id="fileInfoBadge">—</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<main class="dashboard-main" id="dashMain">
+
+  <!-- LOADING STATE -->
+  <div class="loading-state" id="loadingState">
+    <div class="loader-ring"></div>
+    <div class="loader-text">Memuat data...</div>
+  </div>
+
+  <!-- NO DATA STATE -->
+  <div class="no-data-state" id="noDataState" style="display:none">
+    <div class="no-data-icon">📡</div>
+    <h2>Tidak ada data</h2>
+    <p>Silakan upload file G-NetTrack Pro terlebih dahulu</p>
+    <a href="index.html" class="back-home-btn">← Kembali ke Upload</a>
+  </div>
+
+  <!-- DASHBOARD CONTENT -->
+  <div id="dashContent" style="display:none">
+
+    <!-- ── SECTION 01: INFO ── -->
+    <section class="dash-section" id="info">
+      <div class="section-hdr">
+        <div class="section-num">01</div>
+        <div>
+          <div class="section-title">INFORMASI DRIVE TEST</div>
+          <div class="section-sub">Data umum sesi pengukuran</div>
+        </div>
+      </div>
+      <div class="info-grid" id="infoGrid"></div>
+    </section>
+
+    <!-- ── SECTION 02: SERVING CELL ── -->
+    <section class="dash-section" id="cell">
+      <div class="section-hdr">
+        <div class="section-num">02</div>
+        <div>
+          <div class="section-title">DATA SERVING CELL</div>
+          <div class="section-sub">Parameter jaringan aktif</div>
+        </div>
+      </div>
+      <div class="info-grid" id="cellGrid"></div>
+    </section>
+
+    <!-- ── SECTION 03: KPI ── -->
+    <section class="dash-section" id="kpi">
+      <div class="section-hdr">
+        <div class="section-num">03</div>
+        <div>
+          <div class="section-title">RINGKASAN KPI</div>
+          <div class="section-sub">Key Performance Indicators rata-rata</div>
+        </div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-rsrp">
+          <div class="kpi-label">RSRP</div>
+          <div class="kpi-val" id="kpiRsrp">—</div>
+          <div class="kpi-unit">dBm</div>
+          <div class="kpi-desc">Reference Signal Received Power</div>
+          <div id="kpiRsrpBadge" class="kpi-badge-wrap"></div>
+          <div class="kpi-spark" id="sparkRsrp"></div>
+        </div>
+        <div class="kpi-card kpi-rsrq">
+          <div class="kpi-label">RSRQ</div>
+          <div class="kpi-val" id="kpiRsrq">—</div>
+          <div class="kpi-unit">dB</div>
+          <div class="kpi-desc">Reference Signal Received Quality</div>
+          <div id="kpiRsrqBadge" class="kpi-badge-wrap"></div>
+          <div class="kpi-spark" id="sparkRsrq"></div>
+        </div>
+        <div class="kpi-card kpi-snr">
+          <div class="kpi-label">SNR</div>
+          <div class="kpi-val" id="kpiSnr">—</div>
+          <div class="kpi-unit">dB</div>
+          <div class="kpi-desc">Signal to Noise Ratio</div>
+          <div id="kpiSnrBadge" class="kpi-badge-wrap"></div>
+          <div class="kpi-spark" id="sparkSnr"></div>
+        </div>
+      </div>
+      <div class="kpi-extra" id="kpiExtra"></div>
+    </section>
+
+    <!-- ── SECTION 04: GRAFIK ── -->
+    <section class="dash-section" id="grafik">
+      <div class="section-hdr">
+        <div class="section-num">04</div>
+        <div>
+          <div class="section-title">GRAFIK PARAMETER</div>
+          <div class="section-sub">Time series RSRP, RSRQ, SNR, Throughput</div>
+        </div>
+      </div>
+
+      <!-- CHART TABS -->
+      <div class="chart-tabs">
+        <button class="chart-tab active" data-chart="rsrp">RSRP</button>
+        <button class="chart-tab" data-chart="rsrq">RSRQ</button>
+        <button class="chart-tab" data-chart="snr">SNR</button>
+        <button class="chart-tab" data-chart="tp">Throughput</button>
+        <button class="chart-tab" data-chart="all">Semua</button>
+      </div>
+
+      <div class="chart-panels">
+
+        <div class="chart-panel active" id="panel-rsrp">
+          <div class="chart-card">
+            <div class="chart-card-hdr">
+              <div>
+                <div class="chart-card-title">RSRP — Reference Signal Received Power</div>
+                <div class="chart-legend-row">
+                  <span class="leg"><span class="leg-dot" style="background:#38bdf8"></span>RSRP</span>
+                  <span class="leg"><span class="leg-dot" style="background:#4ade80"></span>−80 dBm</span>
+                  <span class="leg"><span class="leg-dot" style="background:#fbbf24"></span>−100 dBm</span>
+                  <span class="leg"><span class="leg-dot" style="background:#f87171"></span>Rawan</span>
+                </div>
+              </div>
+              <button class="dl-btn" onclick="downloadChart('rsrpChart','RSRP')">⬇ PNG</button>
+            </div>
+            <div class="chart-wrap"><canvas id="rsrpChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="chart-panel" id="panel-rsrq">
+          <div class="chart-card">
+            <div class="chart-card-hdr">
+              <div>
+                <div class="chart-card-title">RSRQ — Reference Signal Received Quality</div>
+                <div class="chart-legend-row">
+                  <span class="leg"><span class="leg-dot" style="background:#c084fc"></span>RSRQ</span>
+                  <span class="leg"><span class="leg-dot" style="background:#4ade80"></span>−10 dB</span>
+                  <span class="leg"><span class="leg-dot" style="background:#f87171"></span>−19 dB</span>
+                  <span class="leg"><span class="leg-dot" style="background:#f87171"></span>Rawan</span>
+                </div>
+              </div>
+              <button class="dl-btn" onclick="downloadChart('rsrqChart','RSRQ')">⬇ PNG</button>
+            </div>
+            <div class="chart-wrap"><canvas id="rsrqChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="chart-panel" id="panel-snr">
+          <div class="chart-card">
+            <div class="chart-card-hdr">
+              <div>
+                <div class="chart-card-title">SNR — Signal to Noise Ratio</div>
+                <div class="chart-legend-row">
+                  <span class="leg"><span class="leg-dot" style="background:#4ade80"></span>≥ 0 dB</span>
+                  <span class="leg"><span class="leg-dot" style="background:#fb923c"></span>&lt; 0 dB</span>
+                  <span class="leg"><span class="leg-dot" style="background:#f87171"></span>Rawan</span>
+                </div>
+              </div>
+              <button class="dl-btn" onclick="downloadChart('snrChart','SNR')">⬇ PNG</button>
+            </div>
+            <div class="chart-wrap"><canvas id="snrChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="chart-panel" id="panel-tp">
+          <div class="chart-card">
+            <div class="chart-card-hdr">
+              <div>
+                <div class="chart-card-title">Throughput — DL &amp; UL (Mbps)</div>
+                <div class="chart-legend-row">
+                  <span class="leg"><span class="leg-dot" style="background:#38bdf8"></span>Download</span>
+                  <span class="leg"><span class="leg-dot" style="background:#fb923c"></span>Upload</span>
+                </div>
+              </div>
+              <button class="dl-btn" onclick="downloadChart('tpChart','Throughput')">⬇ PNG</button>
+            </div>
+            <div class="chart-wrap"><canvas id="tpChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="chart-panel" id="panel-all">
+          <div class="chart-card">
+            <div class="chart-card-hdr">
+              <div class="chart-card-title">RSRP + RSRQ + SNR — Overlay</div>
+            </div>
+            <div class="chart-wrap chart-wrap-tall"><canvas id="allChart"></canvas></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── SECTION 05: PETA ── -->
+    <section class="dash-section" id="peta">
+      <div class="section-hdr">
+        <div class="section-num">05</div>
+        <div>
+          <div class="section-title">PETA SINYAL</div>
+          <div class="section-sub">Visualisasi geografis parameter jaringan</div>
+        </div>
+      </div>
+
+      <div class="map-toolbar">
+        <div class="map-layer-btns" id="mapLayerBtns">
+          <button class="map-btn active" data-layer="rsrp">RSRP</button>
+          <button class="map-btn" data-layer="rsrq">RSRQ</button>
+          <button class="map-btn" data-layer="snr">SNR</button>
+          <button class="map-btn" data-layer="rawan">⚠ Rawan</button>
+        </div>
+        <div class="map-event-btns" id="mapEventBtns">
+          <button class="map-evt-btn" id="btnHandover" data-active="false" onclick="toggleEventLayer('handover')">⇄ Handover</button>
+          <button class="map-evt-btn map-evt-purple" id="btnReselect" data-active="false" onclick="toggleEventLayer('reselect')">↺ Reselect</button>
+        </div>
+      </div>
+
+      <div class="map-container">
+        <div id="map"></div>
+        <div class="map-legend-panel" id="mapLegend"></div>
+        <div class="map-stats-overlay" id="mapStats"></div>
+      </div>
+    </section>
+
+    <!-- ── SECTION 06: EVENTS ── -->
+    <section class="dash-section" id="events">
+      <div class="section-hdr">
+        <div class="section-num">06</div>
+        <div>
+          <div class="section-title">EVENTS — HANDOVER &amp; CELL RESELECTION</div>
+          <div class="section-sub">Data perpindahan sel dari file KML</div>
+        </div>
+      </div>
+      <div id="eventsContent">
+        <div class="empty-state">
+          <div class="empty-icon">📍</div>
+          <p>Upload file <code>.kml</code> events untuk melihat data handover &amp; cell reselection di sini dan pada peta.</p>
+          <button class="upload-kml-inline" onclick="document.getElementById('kmlInlineInput').click()">
+            Upload .KML Sekarang
+            <input type="file" id="kmlInlineInput" accept=".kml" style="display:none" onchange="handleInlineKML(this)">
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION 07: DISTRIBUSI ── -->
+    <section class="dash-section" id="distribusi">
+      <div class="section-hdr">
+        <div class="section-num">07</div>
+        <div>
+          <div class="section-title">TABEL STANDAR &amp; DISTRIBUSI</div>
+          <div class="section-sub">Kategori parameter dan persentase sebaran data</div>
+        </div>
+      </div>
+
+      <div class="dist-layout">
+        <!-- STANDAR TABLES -->
+        <div class="std-tables">
+          <div class="std-card">
+            <div class="std-card-hdr std-cyan">Standar RSRP (dBm)</div>
+            <table class="std-table">
+              <thead><tr><th>Kategori</th><th>Range</th><th>Warna</th></tr></thead>
+              <tbody>
+                <tr><td class="c-blue fw">Sangat Baik</td><td class="mono">&gt; −80</td><td><span class="clr-tag" style="--c:#60a5fa">Biru</span></td></tr>
+                <tr><td class="c-green fw">Bagus</td><td class="mono">−80 s/d −90</td><td><span class="clr-tag" style="--c:#4ade80">Hijau</span></td></tr>
+                <tr><td class="c-yellow fw">Normal</td><td class="mono">−90 s/d −100</td><td><span class="clr-tag" style="--c:#facc15">Kuning</span></td></tr>
+                <tr><td class="c-orange fw">Buruk</td><td class="mono">−100 s/d −110</td><td><span class="clr-tag" style="--c:#fb923c">Oranye</span></td></tr>
+                <tr><td class="c-red fw">Sangat Buruk</td><td class="mono">&lt; −110</td><td><span class="clr-tag" style="--c:#f87171">Merah</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="std-card">
+            <div class="std-card-hdr std-purple">Standar RSRQ (dB)</div>
+            <table class="std-table">
+              <thead><tr><th>Kategori</th><th>Range</th></tr></thead>
+              <tbody>
+                <tr><td class="c-blue fw">Excellent</td><td class="mono">&gt; −9</td></tr>
+                <tr><td class="c-green fw">Best</td><td class="mono">−10 s/d −9</td></tr>
+                <tr><td class="c-green fw">Good</td><td class="mono">−15 s/d −10</td></tr>
+                <tr><td class="c-orange fw">Poor</td><td class="mono">−19 s/d −15</td></tr>
+                <tr><td class="c-red fw">Bad</td><td class="mono">&lt; −20</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="std-card">
+            <div class="std-card-hdr std-green">Standar SNR (dB)</div>
+            <table class="std-table">
+              <thead><tr><th>Kategori</th><th>Range</th></tr></thead>
+              <tbody>
+                <tr><td class="c-blue fw">Sangat Baik</td><td class="mono">&gt; 20</td></tr>
+                <tr><td class="c-green fw">Baik</td><td class="mono">10 s/d 20</td></tr>
+                <tr><td class="c-yellow fw">Cukup</td><td class="mono">0 s/d 10</td></tr>
+                <tr><td class="c-orange fw">Buruk</td><td class="mono">−10 s/d 0</td></tr>
+                <tr><td class="c-red fw">Sangat Buruk</td><td class="mono">&lt; −10</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- DISTRIBUSI BARS -->
+        <div class="dist-bars-col">
+          <div class="dist-card">
+            <div class="dist-card-hdr">Distribusi RSRP</div>
+            <div id="distRsrp" class="dist-bars"></div>
+          </div>
+          <div class="dist-card">
+            <div class="dist-card-hdr">Distribusi RSRQ</div>
+            <div id="distRsrq" class="dist-bars"></div>
+          </div>
+          <div class="dist-card">
+            <div class="dist-card-hdr">Distribusi SNR</div>
+            <div id="distSnr" class="dist-bars"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION 08: TITIK RAWAN ── -->
+    <section class="dash-section" id="rawan">
+      <div class="section-hdr">
+        <div class="section-num">08</div>
+        <div>
+          <div class="section-title">TITIK RAWAN SINYAL</div>
+          <div class="section-sub">Titik dengan parameter di luar threshold normal</div>
+        </div>
+      </div>
+      <div id="rawanContent"></div>
+    </section>
+
+  </div><!-- /dashContent -->
+</main>
+
+<!-- SCROLL TO TOP -->
+<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll to top">↑</button>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/map.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
