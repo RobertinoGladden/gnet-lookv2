@@ -8,6 +8,10 @@
 let DATA   = [];
 let EVENTS = [];
 
+// Expose globally for AI module
+Object.defineProperty(window, 'DATA',   { get: () => DATA });
+Object.defineProperty(window, 'EVENTS', { get: () => EVENTS });
+
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════

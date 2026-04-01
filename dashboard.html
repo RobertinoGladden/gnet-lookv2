@@ -57,6 +57,11 @@
       <span class="nav-label">Titik Rawan</span>
       <span class="nav-badge nav-badge-red" id="rawanBadge">0</span>
     </a>
+    <a href="#ai" class="nav-item nav-item-ai" data-section="ai">
+      <span class="nav-icon">✦</span>
+      <span class="nav-label">AI Analyst</span>
+      <span class="nav-badge nav-badge-ai">NEW</span>
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -400,6 +405,112 @@
       <div id="rawanContent"></div>
     </section>
 
+    <!-- ── SECTION 09: AI ANALYST ── -->
+    <section class="dash-section" id="ai">
+      <div class="section-hdr">
+        <div class="section-num ai-num">✦</div>
+        <div>
+          <div class="section-title">AI ANALYST <span class="ai-title-badge">Powered by Gemini · Free</span></div>
+          <div class="section-sub">Analisis otomatis & chat interaktif berbasis data drive test Anda</div>
+        </div>
+      </div>
+
+      <!-- API KEY GATE -->
+      <div id="aiApiGate" class="ai-gate">
+        <div class="ai-gate-icon">🔑</div>
+        <h3>Masukkan Google Gemini API Key</h3>
+        <p>Gratis! Dapatkan API key dari Google AI Studio. Key hanya tersimpan di browser tab ini — tidak pernah dikirim ke server manapun.</p>
+        <div class="ai-key-row">
+          <input type="password" id="aiApiKeyInput" class="ai-key-input" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
+          <button class="ai-key-btn" onclick="AIAnalyst.saveKey()">Simpan & Mulai</button>
+        </div>
+        <div class="ai-gate-note">
+          Daftar gratis di <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> · Tidak perlu kartu kredit · 1.500 request/hari gratis
+        </div>
+      </div>
+
+      <!-- AI PANEL (shown after key is set) -->
+      <div id="aiPanel" style="display:none">
+
+        <!-- KEY STATUS BAR -->
+        <div class="ai-key-status">
+          <span class="ai-key-indicator">
+            <span class="pulse-dot"></span>
+            Gemini 2.0 Flash terhubung · Free tier
+          </span>
+          <button class="ai-change-key-btn" onclick="AIAnalyst.changeKey()">Ganti Key</button>
+        </div>
+
+        <!-- QUICK ANALYSIS BUTTONS -->
+        <div class="ai-quick-section">
+          <div class="ai-quick-label">⚡ Analisis Cepat</div>
+          <div class="ai-quick-grid">
+            <button class="ai-quick-btn" data-prompt="full">
+              <span class="ai-quick-icon">📋</span>
+              <span class="ai-quick-title">Laporan Lengkap</span>
+              <span class="ai-quick-desc">Analisis komprehensif semua parameter</span>
+            </button>
+            <button class="ai-quick-btn" data-prompt="kpi">
+              <span class="ai-quick-icon">📈</span>
+              <span class="ai-quick-title">Evaluasi KPI</span>
+              <span class="ai-quick-desc">RSRP, RSRQ, SNR vs standar</span>
+            </button>
+            <button class="ai-quick-btn" data-prompt="coverage">
+              <span class="ai-quick-icon">🗺</span>
+              <span class="ai-quick-title">Analisis Coverage</span>
+              <span class="ai-quick-desc">Distribusi sinyal & area bermasalah</span>
+            </button>
+            <button class="ai-quick-btn" data-prompt="handover">
+              <span class="ai-quick-icon">⇄</span>
+              <span class="ai-quick-title">Analisis Handover</span>
+              <span class="ai-quick-desc">Evaluasi stabilitas & frekuensi HO</span>
+            </button>
+            <button class="ai-quick-btn" data-prompt="throughput">
+              <span class="ai-quick-icon">🚀</span>
+              <span class="ai-quick-title">Throughput</span>
+              <span class="ai-quick-desc">Analisis kecepatan DL/UL</span>
+            </button>
+            <button class="ai-quick-btn" data-prompt="recommend">
+              <span class="ai-quick-icon">🛠</span>
+              <span class="ai-quick-title">Rekomendasi</span>
+              <span class="ai-quick-desc">Saran optimasi & improvement</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- AI CHAT AREA -->
+        <div class="ai-chat-container">
+          <div class="ai-chat-messages" id="aiMessages">
+            <div class="ai-welcome">
+              <div class="ai-welcome-icon">✦</div>
+              <div class="ai-welcome-title">AI Analyst siap membantu</div>
+              <div class="ai-welcome-sub">Pilih analisis cepat di atas atau ketik pertanyaan Anda tentang data drive test ini. AI sudah memiliki konteks lengkap dari data Anda.</div>
+            </div>
+          </div>
+
+          <!-- TYPING INDICATOR -->
+          <div class="ai-typing" id="aiTyping" style="display:none">
+            <div class="ai-typing-avatar">✦</div>
+            <div class="ai-typing-dots"><span></span><span></span><span></span></div>
+          </div>
+
+          <!-- CHAT INPUT -->
+          <div class="ai-chat-input-wrap">
+            <textarea
+              id="aiChatInput"
+              class="ai-chat-input"
+              placeholder="Tanya AI tentang data drive test Anda... (Enter untuk kirim, Shift+Enter untuk baris baru)"
+              rows="1"
+            ></textarea>
+            <button class="ai-send-btn" id="aiSendBtn" onclick="AIAnalyst.sendChat()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /aiPanel -->
+    </section>
+
   </div><!-- /dashContent -->
 </main>
 
@@ -414,6 +525,7 @@
 <script src="js/parser.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/map.js"></script>
+<script src="js/ai.js"></script>
 <script src="js/dashboard.js"></script>
 </body>
 </html>
