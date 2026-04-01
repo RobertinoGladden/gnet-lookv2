@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════
-   AI.JS — AI Analyst · Gemini 2.0 Flash (FREE)
+   AI.JS — AI Analyst · Groq (FREE)
+   Model: llama-3.3-70b-versatile
    GNet Analyzer v3.2
 ═══════════════════════════════════════════════ */
 'use strict';
@@ -11,8 +12,8 @@ window.AIAnalyst = (() => {
   let isStreaming = false;
   let dataContext = null;
 
-  const MODEL    = 'gemini-2.0-flash';
-  const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+  const MODEL    = 'llama-3.3-70b-versatile';
+  const API_BASE = 'https://api.groq.com/openai/v1/chat/completions';
 
   // ── PROMPT TEMPLATES ──
   const QUICK_PROMPTS = {
@@ -104,7 +105,7 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
 
   // ── INIT ──
   function init() {
-    const saved = sessionStorage.getItem('gnet_gemini_key');
+    const saved = sessionStorage.getItem('gnet_groq_key');
     if (saved) { apiKey = saved; showPanel(); }
 
     const inp = document.getElementById('aiChatInput');
@@ -124,25 +125,50 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
           runQuickPrompt(btn.dataset.prompt, btn);
       });
     });
+
+    _updateBrandingLabels();
+  }
+
+  // ── UPDATE BRANDING ──
+  function _updateBrandingLabels() {
+    const badge = document.querySelector('.ai-model-badge');
+    if (badge) {
+      badge.textContent = 'Powered by Groq · Free';
+      badge.style.background = 'rgba(74,222,128,0.12)';
+      badge.style.color = '#4ade80';
+      badge.style.borderColor = 'rgba(74,222,128,0.3)';
+    }
+    const inp = document.getElementById('aiApiKeyInput');
+    if (inp) inp.placeholder = 'gsk_...';
+    const hint = document.querySelector('.ai-key-hint');
+    if (hint) hint.innerHTML = 'Gratis · Daftar & dapatkan key di <a href="https://console.groq.com" target="_blank" style="color:var(--cyan)">console.groq.com</a>';
+    const statusLabel = document.getElementById('aiStatusLabel');
+    if (statusLabel && apiKey) statusLabel.textContent = 'Llama 3.3 70B · Groq · Free';
   }
 
   // ── KEY MANAGEMENT ──
   function saveKey() {
     const input = document.getElementById('aiApiKeyInput');
     const key   = (input?.value || '').trim();
-    if (key.length < 20) {
-      if (input) { input.style.animation='none'; input.offsetHeight; input.style.animation='shake 0.4s ease'; setTimeout(()=>input.style.animation='',400); }
-      showKeyError('API key tidak valid. Pastikan key berasal dari Google AI Studio.');
+    if (!key.startsWith('gsk_') || key.length < 20) {
+      if (input) {
+        input.style.animation = 'none';
+        input.offsetHeight;
+        input.style.animation = 'shake 0.4s ease';
+        setTimeout(() => input.style.animation = '', 400);
+      }
+      showKeyError('API key tidak valid. Gunakan key dari console.groq.com (format: gsk_...)');
       return;
     }
     apiKey = key;
-    sessionStorage.setItem('gnet_gemini_key', key);
+    sessionStorage.setItem('gnet_groq_key', key);
     showPanel();
+    _updateBrandingLabels();
   }
 
   function changeKey() {
     apiKey = '';
-    sessionStorage.removeItem('gnet_gemini_key');
+    sessionStorage.removeItem('gnet_groq_key');
     document.getElementById('aiPanel').style.display   = 'none';
     document.getElementById('aiApiGate').style.display = 'block';
     const inp = document.getElementById('aiApiKeyInput');
@@ -182,7 +208,7 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
     await sendMessage(msg);
   }
 
-  // ── CORE SEND → Gemini Streaming ──
+  // ── CORE SEND → Groq Streaming (OpenAI-compatible) ──
   async function sendMessage(userMsg) {
     if (!apiKey || isStreaming) return;
     isStreaming = true;
@@ -196,33 +222,39 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
     document.getElementById('aiMessages')?.querySelector('.ai-welcome')?.remove();
     appendMessage('user', userMsg);
 
-    // Build history for Gemini (user/model alternating)
-    chatHistory.push({ role:'user', parts:[{ text: userMsg }] });
+    // Inject data context only on first message
+    const isFirst = chatHistory.length === 0;
+    const userContent = isFirst
+      ? `Data drive test:\n\n${dataContext}\n\n---\n${userMsg}`
+      : userMsg;
 
-    // Inject data context into first user turn
-    const contents = chatHistory.map((turn, i) => {
-      if (i === 0 && turn.role === 'user') {
-        return { role:'user', parts:[{ text:`Data drive test:\n\n${dataContext}\n\n---\n${turn.parts[0].text}` }] };
-      }
-      return turn;
-    });
+    chatHistory.push({ role: 'user', content: userContent });
+
+    const trimmed = chatHistory.length > 20 ? chatHistory.slice(-20) : chatHistory;
 
     setTyping(true); setSendEnabled(false);
 
     try {
-      const res = await fetch(
-        `${API_BASE}/${MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`,
-        { method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({
-            system_instruction: { parts:[{ text: SYSTEM }] },
-            contents,
-            generationConfig: { temperature:0.7, maxOutputTokens:2048, topP:0.9 }
-          })
-        }
-      );
+      const res = await fetch(API_BASE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: [
+            { role: 'system', content: SYSTEM },
+            ...trimmed
+          ],
+          max_tokens: 2048,
+          temperature: 0.7,
+          stream: true
+        })
+      });
 
       if (!res.ok) {
-        const e = await res.json().catch(()=>({}));
+        const e = await res.json().catch(() => ({}));
         throw new Error(e?.error?.message || `HTTP ${res.status}`);
       }
 
@@ -235,44 +267,50 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const lines = decoder.decode(value, {stream:true}).split('\n').filter(l=>l.startsWith('data: '));
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
         for (const line of lines) {
           const raw = line.slice(6).trim();
-          if (!raw || raw==='[DONE]') continue;
+          if (!raw || raw === '[DONE]') continue;
           try {
-            const delta = JSON.parse(raw)?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const delta = JSON.parse(raw)?.choices?.[0]?.delta?.content || '';
             if (delta) { fullText += delta; renderStreamBubble(bubble, fullText); scrollToBottom(); }
-          } catch(_) {}
+          } catch (_) {}
         }
       }
 
       finalizeBubble(bubble, fullText);
-      chatHistory.push({ role:'model', parts:[{ text: fullText }] });
+      chatHistory.push({ role: 'assistant', content: fullText });
       if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
 
-    } catch(err) {
+    } catch (err) {
       setTyping(false);
       let msg = `**Error:** ${err.message}`;
-      if (err.message.includes('API_KEY_INVALID') || err.message.includes('400'))
-        msg = '**API Key tidak valid.** Cek kembali key dari Google AI Studio dan klik "Ganti Key".';
-      else if (err.message.includes('429') || err.message.includes('RESOURCE_EXHAUSTED'))
-        msg = '**Rate limit.** Free tier: 15 request/menit. Tunggu sebentar lalu coba lagi.';
+      if (err.message.includes('401') || err.message.includes('invalid_api_key'))
+        msg = '**API Key tidak valid.** Pastikan key dari [console.groq.com](https://console.groq.com) dan klik "Ganti Key".';
+      else if (err.message.includes('429') || err.message.includes('rate_limit'))
+        msg = '**Rate limit.** Free tier Groq: 30 req/menit, 14.400/hari. Tunggu sebentar lalu coba lagi.';
+      else if (err.message.includes('503') || err.message.includes('overloaded'))
+        msg = '**Server Groq sedang sibuk.** Coba lagi dalam beberapa detik.';
+      else if (err.message.includes('Failed to fetch'))
+        msg = '**Koneksi gagal.** Pastikan app dijalankan via GitHub Pages atau `python3 -m http.server 8080`, bukan file://.';
       appendMessage('ai', msg);
+      chatHistory.pop();
     }
 
     isStreaming = false; setSendEnabled(true);
   }
 
-  // ── UI ──
+  // ── UI HELPERS ──
   function appendMessage(role, text) {
     const msgs = document.getElementById('aiMessages');
     if (!msgs) return;
-    const isAi = role==='ai';
+    const isAi = role === 'ai';
     const div  = document.createElement('div');
-    div.className = `ai-message${isAi?'':' ai-message-user'}`;
+    div.className = `ai-message${isAi ? '' : ' ai-message-user'}`;
     div.innerHTML = `
-      <div class="ai-msg-avatar ${isAi?'ai-msg-avatar-ai':'ai-msg-avatar-user'}">${isAi?'✦':'👤'}</div>
-      <div class="ai-msg-bubble ${isAi?'ai-msg-bubble-ai':'ai-msg-bubble-user'}">${isAi?md(text):esc(text)}</div>`;
+      <div class="ai-msg-avatar ${isAi ? 'ai-msg-avatar-ai' : 'ai-msg-avatar-user'}">${isAi ? '✦' : '👤'}</div>
+      <div class="ai-msg-bubble ${isAi ? 'ai-msg-bubble-ai' : 'ai-msg-bubble-user'}">${isAi ? md(text) : esc(text)}</div>`;
     msgs.appendChild(div); scrollToBottom();
   }
 
@@ -286,40 +324,35 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
   }
   function renderStreamBubble(b, t) { b.innerHTML = md(t) + '<span class="ai-cursor"></span>'; }
   function finalizeBubble(b, t)     { b.innerHTML = md(t); }
-  function setTyping(s)  { const e=document.getElementById('aiTyping'); if(e) e.style.display=s?'flex':'none'; }
-  function setSendEnabled(s) { ['aiSendBtn','aiChatInput'].forEach(id=>{const e=document.getElementById(id);if(e)e.disabled=!s;}); }
-  function scrollToBottom() { const m=document.getElementById('aiMessages'); if(m) m.scrollTop=m.scrollHeight; }
+  function setTyping(s)  { const e = document.getElementById('aiTyping'); if (e) e.style.display = s ? 'flex' : 'none'; }
+  function setSendEnabled(s) { ['aiSendBtn','aiChatInput'].forEach(id => { const e = document.getElementById(id); if (e) e.disabled = !s; }); }
+  function scrollToBottom() { const m = document.getElementById('aiMessages'); if (m) m.scrollTop = m.scrollHeight; }
 
-  // ── MARKDOWN ──
+  // ── MARKDOWN RENDERER ──
   function md(raw) {
     let t = esc(raw);
-    // code block
     t = t.replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre>$1</pre>');
-    // headers
-    t = t.replace(/^#{3} (.+)$/gm,'<h3>$1</h3>').replace(/^#{2} (.+)$/gm,'<h3>$1</h3>').replace(/^# (.+)$/gm,'<h3>$1</h3>');
-    // bold/italic
-    t = t.replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*([^*\n]+?)\*/g,'<em>$1</em>');
-    // inline code
-    t = t.replace(/`([^`]+)`/g,'<code>$1</code>');
-    // hr
-    t = t.replace(/^---+$/gm,'<hr>');
-    // ul/ol
-    t = t.replace(/((?:^[-*•] .+$\n?)+)/gm, b => '<ul>'+b.trim().split('\n').map(l=>`<li>${l.replace(/^[-*•] /,'')}</li>`).join('')+'</ul>');
-    t = t.replace(/((?:^\d+\. .+$\n?)+)/gm, b => '<ol>'+b.trim().split('\n').map(l=>`<li>${l.replace(/^\d+\. /,'')}</li>`).join('')+'</ol>');
-    // paragraphs
-    t = t.split(/\n\n+/).map(b=>{ b=b.trim(); if(!b) return ''; if(/^<(h3|ul|ol|pre|hr)/.test(b)) return b; return '<p>'+b.replace(/\n/g,'<br>')+'</p>'; }).join('');
-    // colorize dBm
-    t = t.replace(/(-1[01]\d|-\d{2,3}(?:\.\d)?)\s*dBm/g,(m,v)=>{const n=parseFloat(v);return `<span class="${n>-80?'ai-badge-good':n>-100?'ai-badge-warn':'ai-badge-bad'}">${m}</span>`;});
+    t = t.replace(/^#{3} (.+)$/gm, '<h3>$1</h3>').replace(/^#{2} (.+)$/gm, '<h3>$1</h3>').replace(/^# (.+)$/gm, '<h3>$1</h3>');
+    t = t.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+    t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+    t = t.replace(/^---+$/gm, '<hr>');
+    t = t.replace(/((?:^[-*•] .+$\n?)+)/gm, b => '<ul>' + b.trim().split('\n').map(l => `<li>${l.replace(/^[-*•] /, '')}</li>`).join('') + '</ul>');
+    t = t.replace(/((?:^\d+\. .+$\n?)+)/gm, b => '<ol>' + b.trim().split('\n').map(l => `<li>${l.replace(/^\d+\. /, '')}</li>`).join('') + '</ol>');
+    t = t.split(/\n\n+/).map(b => { b = b.trim(); if (!b) return ''; if (/^<(h3|ul|ol|pre|hr)/.test(b)) return b; return '<p>' + b.replace(/\n/g, '<br>') + '</p>'; }).join('');
+    t = t.replace(/(-1[01]\d|-\d{2,3}(?:\.\d)?)\s*dBm/g, (m, v) => {
+      const n = parseFloat(v);
+      return `<span class="${n > -80 ? 'ai-badge-good' : n > -100 ? 'ai-badge-warn' : 'ai-badge-bad'}">${m}</span>`;
+    });
     return t;
   }
-  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   return { init, saveKey, changeKey, sendChat, runQuickPrompt };
 })();
 
 // shake keyframe
-const ss=document.createElement('style');
-ss.textContent='@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}';
+const ss = document.createElement('style');
+ss.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}';
 document.head.appendChild(ss);
 
-document.addEventListener('DOMContentLoaded', () => setTimeout(()=>AIAnalyst.init(), 600));
+document.addEventListener('DOMContentLoaded', () => setTimeout(() => AIAnalyst.init(), 600));
