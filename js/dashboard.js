@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
    DASHBOARD.JS — Dashboard controller
-   GNet Analyzer v3.0
+   GNet Analyzer v4.0
 ═══════════════════════════════════════════════ */
 
 'use strict';
@@ -10,10 +10,9 @@ let EVENTS = [];
 let EVENTS_PAGE = 0;
 const EVENTS_PER_PAGE = 100;
 
-// Expose globally for AI module
-Object.defineProperty(window, 'DATA',   { get: () => DATA });
-Object.defineProperty(window, 'EVENTS', { get: () => EVENTS });
-Object.defineProperty(window, 'EVENTS_PAGE', { get: () => EVENTS_PAGE });
+Object.defineProperty(window, 'DATA',            { get: () => DATA });
+Object.defineProperty(window, 'EVENTS',          { get: () => EVENTS });
+Object.defineProperty(window, 'EVENTS_PAGE',     { get: () => EVENTS_PAGE });
 Object.defineProperty(window, 'EVENTS_PER_PAGE', { get: () => EVENTS_PER_PAGE });
 
 // ═══════════════════════════════════════════════
@@ -40,10 +39,10 @@ function loadData() {
 
     EVENTS_PAGE = 0;
     const storedFilename = sessionStorage.getItem('gnet_filename');
-    const fallbackFiles   = JSON.parse(sessionStorage.getItem('gnet_files') || '[]');
+    const fallbackFiles  = JSON.parse(sessionStorage.getItem('gnet_files') || '[]');
     const filename = storedFilename || (Array.isArray(fallbackFiles) && fallbackFiles.length ? fallbackFiles.join(', ') : 'unknown');
     document.getElementById('fileInfoBadge').textContent = filename;
-    document.getElementById('topbarTitle').textContent = `${filename} — ${DATA.length.toLocaleString()} pts`;
+    document.getElementById('topbarTitle').textContent   = `${filename} · ${DATA.length.toLocaleString()} pts`;
 
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('dashContent').style.display  = 'block';
@@ -79,21 +78,21 @@ function buildAll() {
 // ═══════════════════════════════════════════════
 function buildInfo() {
   const first = DATA[0], last = DATA[DATA.length-1];
-  const dur  = GNetParser.calcDuration(first.ts, last.ts);
-  const gps  = DATA.filter(d => d.lat && d.lon);
+  const dur   = GNetParser.calcDuration(first.ts, last.ts);
+  const gps   = DATA.filter(d => d.lat && d.lon);
   const avgSpd = (DATA.reduce((s,d)=>s+d.speed,0)/DATA.length*3.6).toFixed(1);
-  const op   = first.operator || '—';
-  const tech = first.tech || '4G';
-  const dev  = (first.device||'').split(':').slice(0,2).join(' ') || '—';
-  const dt   = first.ts.substring(0,10).replace(/\./g,'-');
+  const op    = first.operator || '—';
+  const tech  = first.tech || '4G';
+  const dev   = (first.device||'').split(':').slice(0,2).join(' ') || '—';
+  const dt    = first.ts.substring(0,10).replace(/\./g,'-');
 
   document.getElementById('infoGrid').innerHTML = cards([
-    { label:'Tanggal', value: dt, sub: first.tsDisp?.substring(11) + ' — ' + last.tsDisp?.substring(11) },
-    { label:'Durasi',  value: dur, sub: 'Total waktu pengukuran' },
-    { label:'Operator', value: op, sub: 'Jaringan: ' + tech },
+    { label:'Tanggal',        value: dt,                      sub: (first.tsDisp?.substring(11)||'') + ' — ' + (last.tsDisp?.substring(11)||'') },
+    { label:'Durasi',         value: dur,                     sub: 'Total waktu pengukuran' },
+    { label:'Operator',       value: op,                      sub: 'Jaringan: ' + tech },
     { label:'Total Data Point', value: DATA.length.toLocaleString(), sub: `GPS valid: ${gps.length.toLocaleString()}` },
-    { label:'Kec. Rata-rata',   value: avgSpd + ' km/h', sub: 'Drive test mode' },
-    { label:'Device', value: dev, sub: 'Samsung', mono: true },
+    { label:'Kec. Rata-rata', value: avgSpd + ' km/h',       sub: 'Drive test mode' },
+    { label:'Device',         value: dev,                     sub: 'Model perangkat', mono: true },
   ]);
 }
 
@@ -108,14 +107,14 @@ function buildCell() {
   const uniqueCells = dom.length;
 
   document.getElementById('cellGrid').innerHTML = cards([
-    { label:'eNodeB (Node)', value: first.node||'—', sub:'Serving eNB ID', mono:true },
-    { label:'Cell ID',       value: first.cellid||'—', sub:'Cell Identity', mono:true },
-    { label:'LAC / TAC',     value: first.lac||'—', sub:'Location Area Code', mono:true },
-    { label:'ARFCN',         value: first.arfcn||'—', sub:'Absolute RF Channel', mono:true },
-    { label:'Band LTE',      value: first.band ? 'Band ' + first.band : '—', sub:'LTE Band' },
-    { label:'Bandwidth',     value: first.bw ? first.bw + ' MHz' : '—', sub:'Channel Bandwidth' },
-    { label:'Dominant Cell', value: dom[0]?.[0]||'—', sub: dom[0] ? dom[0][1].toLocaleString() + ' data points' : '' },
-    { label:'Total Unique Cells', value: uniqueCells, sub: uniqueCells > 3 ? '⇄ Banyak handover' : 'Stabil' },
+    { label:'eNodeB (Node)',  value: first.node||'—',   sub:'Serving eNB ID', mono:true },
+    { label:'Cell ID',        value: first.cellid||'—', sub:'Cell Identity', mono:true },
+    { label:'LAC / TAC',      value: first.lac||'—',    sub:'Location Area Code', mono:true },
+    { label:'ARFCN',          value: first.arfcn||'—',  sub:'Absolute RF Channel', mono:true },
+    { label:'Band LTE',       value: first.band ? 'Band ' + first.band : '—', sub:'LTE Band' },
+    { label:'Bandwidth',      value: first.bw ? first.bw + ' MHz' : '—', sub:'Channel Bandwidth' },
+    { label:'Dominant Cell',  value: dom[0]?.[0]||'—',  sub: dom[0] ? dom[0][1].toLocaleString() + ' data points' : '' },
+    { label:'Unique Cells',   value: uniqueCells,        sub: uniqueCells > 3 ? '⇄ Banyak handover' : 'Stabil' },
   ]);
 }
 
@@ -137,12 +136,12 @@ function buildKPI() {
   const max = k => Math.max(...DATA.map(d=>d[k])).toFixed(1);
 
   const setKpi = (id, val, badgeId, good, warn, labels) => {
-    const el = document.getElementById(id);
-    const cls = val > good ? 'v-good' : val > warn ? 'v-warn' : 'v-bad';
-    el.className = 'kpi-val ' + cls;
+    const el  = document.getElementById(id);
+    const cls = val > good ? 'kpi-val kpi-v-good' : val > warn ? 'kpi-val kpi-v-warn' : 'kpi-val kpi-v-bad';
+    el.className = cls;
     el.textContent = val;
-    const bdg = document.getElementById(badgeId);
-    const bCls = val > good ? 'badge badge-good' : val > warn ? 'badge badge-warn' : 'badge badge-bad';
+    const bdg  = document.getElementById(badgeId);
+    const bCls = val > good ? 'kpi-badge badge-best' : val > warn ? 'kpi-badge badge-normal' : 'kpi-badge badge-worst';
     const txt  = val > good ? labels[0] : val > warn ? labels[1] : labels[2];
     bdg.innerHTML = `<span class="${bCls}">${txt}</span>`;
   };
@@ -177,7 +176,11 @@ function buildKPI() {
 }
 
 function extraCard(label, val, sub='') {
-  return `<div class="info-card"><div class="ic-label">${label}</div><div class="ic-value mono">${val}</div>${sub?`<div class="ic-sub">${sub}</div>`:''}</div>`;
+  return `<div class="info-card">
+    <div class="ic-label">${label}</div>
+    <div class="ic-value mono">${val}</div>
+    ${sub ? `<div class="ic-sub">${sub}</div>` : ''}
+  </div>`;
 }
 
 // ═══════════════════════════════════════════════
@@ -191,96 +194,97 @@ function buildEvents() {
   const startIndex = EVENTS_PAGE * EVENTS_PER_PAGE;
   const pageEvents = EVENTS.slice(startIndex, startIndex + EVENTS_PER_PAGE);
 
-  const hoCount = EVENTS.filter(e=>e.type==='HANDOVER').length;
-  const rsCount = EVENTS.filter(e=>e.type==='RESELECTION').length;
+  const navEvents = document.getElementById('navEvents');
+  const badge = document.getElementById('eventsBadge');
+  if (navEvents) navEvents.style.display = 'flex';
+  if (badge) { badge.textContent = EVENTS.length; badge.style.display = 'inline'; }
 
-  // Update nav badge
-  const nb = document.getElementById('eventsBadge');
-  if (nb) { nb.textContent = EVENTS.length; nb.style.display = 'inline-block'; }
+  const hoCount  = EVENTS.filter(e=>e.type==='HANDOVER').length;
+  const rsCount  = EVENTS.filter(e=>e.type==='RESELECTION').length;
 
-  const rows = pageEvents.map((ev, idx) => {
-    const index = startIndex + idx + 1;
-    const isHO   = ev.type === 'HANDOVER';
-    const color  = isHO ? '#fbbf24' : '#c084fc';
-    const label  = isHO ? '⇄ HO' : '↺ RS';
-    const rsrpN  = parseInt(ev.rsrp);
-    const cls    = isNaN(rsrpN) ? '' : rsrpN < -100 ? 'td-bad' : rsrpN < -90 ? 'td-warn' : 'td-ok';
-    const t      = ev.timeDisp ? ev.timeDisp.substring(11) : '';
+  const rows = pageEvents.map((ev, i) => {
+    const isHO = ev.type === 'HANDOVER';
+    const tagClass = isHO ? 'tag-ho' : 'tag-rs';
+    const tagLabel = isHO ? '⇄ HO' : '↺ RS';
     return `<tr>
-      <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${index}</td>
-      <td><span style="font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px;background:${color}18;color:${color};border:1px solid ${color}44">${label}</span></td>
-      <td style="font-family:var(--mono);font-size:10px">${t}</td>
-      <td style="font-size:10px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${ev.fromCell}">${ev.fromCell}</td>
-      <td style="font-size:10px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${ev.toCell}">${ev.toCell}</td>
-      <td class="${cls}">${ev.rsrp}</td>
-      <td style="font-family:var(--mono);font-size:11px">${ev.rsrq}</td>
-      <td style="font-family:var(--mono);font-size:11px">${ev.snr}</td>
-      <td style="font-size:11px">${ev.enb||'—'}</td>
-      <td style="font-size:10px;color:var(--muted)">${ev.speed}</td>
+      <td style="color:var(--text3);font-size:9px">${startIndex + i + 1}</td>
+      <td><span class="${tagClass}">${tagLabel}</span></td>
+      <td>${ev.timeDisp || ev.time}</td>
+      <td>${ev.fromCell}</td>
+      <td>${ev.toCell}</td>
+      <td style="color:${parseInt(ev.rsrp)<-100?'var(--red)':parseInt(ev.rsrp)<-80?'var(--yellow)':'var(--green)'}">${ev.rsrp}</td>
+      <td>${ev.rsrq}</td>
+      <td>${ev.snr}</td>
+      <td style="color:var(--text2)">${ev.enb||'—'}</td>
     </tr>`;
   }).join('');
 
+  const pagination = totalPages > 1 ? `
+    <div class="events-pagination">
+      <button onclick="goPrevPage()" ${EVENTS_PAGE===0?'disabled':''}>← Prev</button>
+      <span class="page-info">Hal. ${EVENTS_PAGE+1} / ${totalPages}</span>
+      <button onclick="goNextPage()" ${EVENTS_PAGE>=totalPages-1?'disabled':''}>Next →</button>
+    </div>` : '';
+
   document.getElementById('eventsContent').innerHTML = `
     <div class="events-summary">
-      ${extraCard('Handover 4G→4G', hoCount, 'Inter-cell HO')}
-      ${extraCard('Cell Reselection', rsCount, 'Idle mode RS')}
-      ${extraCard('Total Events', EVENTS.length, 'Halaman: '+(EVENTS_PAGE+1)+' / '+totalPages)}
-      ${extraCard('eNB Unik', [...new Set(EVENTS.map(e=>e.enb))].length, 'Unique eNodeBs')}
+      <div class="event-stat">
+        <div class="event-stat-val">${EVENTS.length}</div>
+        <div class="event-stat-lbl">Total Events</div>
+      </div>
+      <div class="event-stat">
+        <div class="event-stat-val" style="color:var(--yellow)">${hoCount}</div>
+        <div class="event-stat-lbl">Handover</div>
+      </div>
+      <div class="event-stat">
+        <div class="event-stat-val" style="color:var(--purple)">${rsCount}</div>
+        <div class="event-stat-lbl">Cell Reselection</div>
+      </div>
     </div>
-    <div class="events-tbl-wrap">
-      <div class="events-tbl-hdr">
-        📍 DAFTAR EVENTS (${startIndex+1}–${Math.min(startIndex+pageEvents.length, EVENTS.length)} / ${EVENTS.length})
-        <div class="events-tbl-hdr-actions">
-          <span onclick="toggleEventLayer('handover')">⇄ Toggle Handover Peta</span>
-          <span onclick="toggleEventLayer('reselect')">↺ Toggle Reselect Peta</span>
-        </div>
-      </div>
-      <div class="events-table-scroll">
-        <table class="events-table">
-          <thead><tr>
-            <th>#</th><th>Tipe</th><th>Waktu</th><th>From Cell</th><th>To Cell</th>
-            <th>RSRP</th><th>RSRQ</th><th>SNR</th><th>eNB</th><th>Speed</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-      <div class="events-pagination">
-        <button onclick="changeEventsPage(-1)" ${EVENTS_PAGE === 0 ? 'disabled' : ''}>Prev</button>
-        <span class="page-info">Page ${EVENTS_PAGE + 1} / ${totalPages}</span>
-        <button onclick="changeEventsPage(1)" ${EVENTS_PAGE + 1 === totalPages ? 'disabled' : ''}>Next</button>
-      </div>
-    </div>`;
+    <div class="events-table-wrap">
+      <table class="events-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Tipe</th><th>Waktu</th>
+            <th>From Cell</th><th>To Cell</th>
+            <th>RSRP</th><th>RSRQ</th><th>SNR</th>
+            <th>eNB</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${pagination}`;
 }
 
-function changeEventsPage(delta) {
-  const totalPages = Math.max(1, Math.ceil(EVENTS.length / EVENTS_PER_PAGE));
-  EVENTS_PAGE = Math.min(totalPages - 1, Math.max(0, EVENTS_PAGE + delta));
+window.goPrevPage = function() {
+  if (EVENTS_PAGE > 0) { EVENTS_PAGE--; buildEvents(); }
+};
+window.goNextPage = function() {
+  const totalPages = Math.ceil(EVENTS.length / EVENTS_PER_PAGE);
+  if (EVENTS_PAGE < totalPages - 1) { EVENTS_PAGE++; buildEvents(); }
+};
+
+// ── INLINE KML UPLOAD ──
+window.handleInlineKML = async function(input) {
+  const f = input.files[0];
+  if (!f) return;
+  const text = await f.text();
+  const events = GNetParser.parseKml ? GNetParser.parseKml(text) : [];
+  if (!events.length) { showToast('Tidak ada event dalam file KML'); return; }
+  EVENTS = events;
+  sessionStorage.setItem('gnet_events', JSON.stringify(EVENTS));
+  GNetMap.addEvents(EVENTS);
   buildEvents();
-}
-
-// Handle inline KML upload on dashboard
-function handleInlineKML(input) {
-  if (!input.files[0]) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const evts = GNetParser.parseKml(e.target.result);
-    if (!evts.length) { showToast('Tidak ada event ditemukan dalam KML.'); return; }
-    EVENTS = evts;
-    EVENTS_PAGE = 0;
-    sessionStorage.setItem('gnet_events', JSON.stringify(EVENTS));
-    GNetMap.addEvents(EVENTS);
-    buildEvents();
-    showToast(`✓ ${evts.length} event dimuat`);
-  };
-  reader.readAsText(input.files[0]);
-}
+  showToast(`${events.length} event berhasil dimuat`);
+};
 
 // ═══════════════════════════════════════════════
 // 07 DISTRIBUSI
 // ═══════════════════════════════════════════════
 function buildDistribution() {
   const distRsrp = [
-    { label:'> −80',     color:'#60a5fa', count: DATA.filter(d=>d.rsrp>-80).length },
+    { label:'> −80',      color:'#60a5fa', count: DATA.filter(d=>d.rsrp>-80).length },
     { label:'−80~−90',   color:'#4ade80', count: DATA.filter(d=>d.rsrp<=-80&&d.rsrp>-90).length },
     { label:'−90~−100',  color:'#facc15', count: DATA.filter(d=>d.rsrp<=-90&&d.rsrp>-100).length },
     { label:'−100~−110', color:'#fb923c', count: DATA.filter(d=>d.rsrp<=-100&&d.rsrp>-110).length },
@@ -289,8 +293,8 @@ function buildDistribution() {
   const distRsrq = [
     { label:'> −9',      color:'#60a5fa', count: DATA.filter(d=>d.rsrq>-9).length },
     { label:'−9~−10',    color:'#4ade80', count: DATA.filter(d=>d.rsrq<=-9&&d.rsrq>-10).length },
-    { label:'−10~−15',   color:'#4ade80', count: DATA.filter(d=>d.rsrq<=-10&&d.rsrq>-15).length },
-    { label:'−15~−19',   color:'#fb923c', count: DATA.filter(d=>d.rsrq<=-15&&d.rsrq>-19).length },
+    { label:'−10~−15',  color:'#4ade80', count: DATA.filter(d=>d.rsrq<=-10&&d.rsrq>-15).length },
+    { label:'−15~−19',  color:'#fb923c', count: DATA.filter(d=>d.rsrq<=-15&&d.rsrq>-19).length },
     { label:'< −19',     color:'#f87171', count: DATA.filter(d=>d.rsrq<=-19).length },
   ];
   const distSnr = [
@@ -323,13 +327,12 @@ function renderDist(id, items) {
     </div>`;
   }).join('');
 
-  // Animate bars after render
   requestAnimationFrame(() => {
     setTimeout(() => {
       el.querySelectorAll('.dist-fill').forEach(bar => {
         bar.style.width = bar.dataset.w + '%';
       });
-    }, 100);
+    }, 80);
   });
 }
 
@@ -344,27 +347,27 @@ function buildRawan() {
   if (!rawan.length) {
     el.innerHTML = `<div class="info-card" style="text-align:center;padding:32px">
       <div style="font-size:32px;margin-bottom:10px">✅</div>
-      <div style="color:var(--green);font-size:18px;font-weight:700">TIDAK ADA TITIK RAWAN</div>
+      <div style="color:var(--green);font-family:var(--mono);font-size:16px;font-weight:600">TIDAK ADA TITIK RAWAN</div>
       <div style="color:var(--text3);font-size:12px;margin-top:6px">Semua parameter dalam batas normal</div>
     </div>`;
     return;
   }
 
-  const badRsrp  = rawan.filter(d=>d.rsrp<-100).length;
-  const badRsrq  = rawan.filter(d=>d.rsrq<-19).length;
-  const badSnr   = rawan.filter(d=>d.snr<-10).length;
-  const pct      = v => ((v/DATA.length)*100).toFixed(1);
-  const sample   = rawan.slice(0, 100);
+  const badRsrp = rawan.filter(d=>d.rsrp<-100).length;
+  const badRsrq = rawan.filter(d=>d.rsrq<-19).length;
+  const badSnr  = rawan.filter(d=>d.snr<-10).length;
+  const pct     = v => ((v/DATA.length)*100).toFixed(1);
+  const sample  = rawan.slice(0, 100);
 
   el.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:12px">
       ${extraCard('RSRP Rawan', `<span style="color:var(--red)">${badRsrp}</span>`, pct(badRsrp)+'% dari total')}
       ${extraCard('RSRQ Rawan', `<span style="color:var(--red)">${badRsrq}</span>`, pct(badRsrq)+'% dari total')}
       ${extraCard('SNR Rawan',  `<span style="color:var(--red)">${badSnr}</span>`,  pct(badSnr)+'% dari total')}
       ${extraCard('Total Rawan',`<span style="color:var(--orange)">${rawan.length}</span>`, pct(rawan.length)+'% dari total')}
     </div>
     <div class="danger-wrap">
-      <div class="danger-hdr">⚠ DAFTAR TITIK RAWAN — ${Math.min(100,rawan.length)} dari ${rawan.length} titik</div>
+      <div class="danger-hdr">⚠ Daftar Titik Rawan — ${Math.min(100,rawan.length)} dari ${rawan.length} titik</div>
       <div class="danger-scroll">
         <table class="rawan-table">
           <thead><tr>
@@ -377,15 +380,15 @@ function buildRawan() {
             if (d.rsrq<-19)  issues.push('RSRQ');
             if (d.snr<-10)   issues.push('SNR');
             return `<tr>
-              <td style="font-family:var(--mono);font-size:10px;color:var(--text3)">${i+1}</td>
-              <td style="font-family:var(--mono);font-size:10px">${d.timePart || (d.tsDisp ? d.tsDisp.substring(11) : '')}</td>
+              <td style="color:var(--text3);font-size:9px">${i+1}</td>
+              <td>${d.timePart || (d.tsDisp ? d.tsDisp.substring(11) : '')}</td>
               <td class="${d.rsrp<-100?'td-bad':'td-warn'}">${d.rsrp}</td>
               <td class="${d.rsrq<-19?'td-bad':'td-warn'}">${d.rsrq}</td>
               <td class="${d.snr<-10?'td-bad':d.snr<0?'td-warn':''}">${d.snr}</td>
-              <td style="font-size:11px">${d.cellname||'—'}</td>
-              <td style="font-family:var(--mono);font-size:9px;color:var(--text3)">${d.lat?d.lat.toFixed(5):'—'}</td>
-              <td style="font-family:var(--mono);font-size:9px;color:var(--text3)">${d.lon?d.lon.toFixed(5):'—'}</td>
-              <td>${issues.map(is=>`<span class="badge badge-bad" style="margin-right:2px">${is}</span>`).join('')}</td>
+              <td>${d.cellname||'—'}</td>
+              <td style="color:var(--text3);font-size:9px">${d.lat?d.lat.toFixed(5):'—'}</td>
+              <td style="color:var(--text3);font-size:9px">${d.lon?d.lon.toFixed(5):'—'}</td>
+              <td>${issues.map(is=>`<span class="badge-bad" style="margin-right:2px">${is}</span>`).join('')}</td>
             </tr>`;
           }).join('')}</tbody>
         </table>
@@ -394,24 +397,22 @@ function buildRawan() {
 }
 
 // ═══════════════════════════════════════════════
-// UI INTERACTIONS
+// UI
 // ═══════════════════════════════════════════════
 
-// ── SIDEBAR ──
 function setupSidebar() {
   const toggle  = document.getElementById('menuToggle');
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebarOverlay');
   const close   = document.getElementById('sidebarClose');
 
-  const open  = () => { sidebar.classList.add('open');    overlay.classList.add('visible'); };
-  const closeFn = () => { sidebar.classList.remove('open'); overlay.classList.remove('visible'); };
+  const open    = () => { sidebar.classList.add('open');    overlay.style.display = 'block'; };
+  const closeFn = () => { sidebar.classList.remove('open'); overlay.style.display = 'none'; };
 
   if (toggle)  toggle.addEventListener('click', () => sidebar.classList.contains('open') ? closeFn() : open());
   if (overlay) overlay.addEventListener('click', closeFn);
   if (close)   close.addEventListener('click', closeFn);
 
-  // Close sidebar on nav click (mobile)
   document.querySelectorAll('.nav-item').forEach(link => {
     link.addEventListener('click', () => {
       if (window.innerWidth <= 768) closeFn();
@@ -419,34 +420,28 @@ function setupSidebar() {
   });
 }
 
-// ── CHART TABS ──
 function setupChartTabs() {
   document.querySelectorAll('.chart-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.chart-panel').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
-      const panelId = 'panel-' + tab.dataset.chart;
-      const panel = document.getElementById(panelId);
+      const panel = document.getElementById('panel-' + tab.dataset.chart);
       if (panel) panel.classList.add('active');
     });
   });
 }
 
-// ── MAP LAYER BUTTONS ──
 function setupMapLayerBtns() {
   document.querySelectorAll('#mapLayerBtns .map-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      GNetMap.switchLayer(btn.dataset.layer);
-    });
+    btn.addEventListener('click', () => GNetMap.switchLayer(btn.dataset.layer));
   });
 }
 
-// ── SCROLL SPY ──
 function setupScrollSpy() {
-  const sections  = document.querySelectorAll('.dash-section[id]');
-  const navItems  = document.querySelectorAll('.nav-item[data-section]');
-  const observer  = new IntersectionObserver(entries => {
+  const sections = document.querySelectorAll('.dash-section[id]');
+  const navItems = document.querySelectorAll('.nav-item[data-section]');
+  const obs = new IntersectionObserver(entries => {
     entries.forEach(e => {
       if (e.isIntersecting) {
         navItems.forEach(n => n.classList.remove('active'));
@@ -454,20 +449,18 @@ function setupScrollSpy() {
         if (active) active.classList.add('active');
       }
     });
-  }, { threshold: 0.25, rootMargin: '-60px 0px -40% 0px' });
-  sections.forEach(s => observer.observe(s));
+  }, { threshold: 0.2, rootMargin: '-56px 0px -40% 0px' });
+  sections.forEach(s => obs.observe(s));
 }
 
-// ── SCROLL TO TOP ──
 function setupScrollTop() {
   const btn = document.getElementById('scrollTop');
   if (!btn) return;
   window.addEventListener('scroll', () => {
-    btn.classList.toggle('visible', window.scrollY > 400);
+    btn.classList.toggle('visible', window.scrollY > 360);
   }, { passive: true });
 }
 
-// ── TOAST ──
 function showToast(msg, dur = 3000) {
   const el = document.getElementById('toast');
   if (!el) return;
