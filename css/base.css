@@ -128,10 +128,10 @@ a:hover { text-decoration: underline; }
   margin-bottom: 6px;
 }
 .info-card .ic-value {
-  font-size: 18px; font-weight: 500; color: var(--text);
+  font-size: 20px; font-weight: 700; color: var(--text);
   line-height: 1.2;
 }
-.info-card .ic-value.mono { font-size: 16px; }
+.info-card .ic-value.mono { font-size: 17px; }
 .info-card .ic-sub {
   font-family: var(--mono);
   font-size: 10px; color: var(--muted);

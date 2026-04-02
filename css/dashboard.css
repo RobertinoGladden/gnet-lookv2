@@ -304,8 +304,8 @@
   border-radius: var(--radius); overflow: hidden;
 }
 .std-card-hdr {
-  padding: 10px 14px; font-family: var(--mono); font-size: 10px;
-  letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600;
+  padding: 10px 14px; font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700;
   border-bottom: 1px solid var(--border2);
 }
 .std-cyan { color: var(--cyan); background: var(--cyan-dim); }
@@ -318,24 +318,33 @@
   background: var(--s1); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
 }
 .dist-card-hdr {
-  padding: 10px 14px; font-family: var(--mono); font-size: 10px;
-  color: var(--cyan); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600;
+  padding: 10px 14px; font-family: var(--mono); font-size: 11px;
+  color: var(--cyan); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700;
   border-bottom: 1px solid var(--border2); background: var(--cyan-dim);
 }
 .dist-bars { padding: 12px 14px; }
 .dist-row {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
 }
 .dist-row:last-child { margin-bottom: 0; }
-.dist-lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); width: 68px; text-align: right; flex-shrink: 0; }
-.dist-track { flex: 1; background: rgba(0,0,0,0.3); border-radius: 3px; height: 16px; overflow: hidden; }
+.dist-lbl {
+  font-family: var(--mono); font-size: 10px; color: var(--text);
+  font-weight: 600; width: 72px; text-align: right; flex-shrink: 0;
+}
+.dist-track { flex: 1; background: rgba(0,0,0,0.3); border-radius: 3px; height: 20px; overflow: hidden; }
 .dist-fill {
   height: 100%; border-radius: 3px; display: flex; align-items: center;
-  padding-left: 6px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+  padding-left: 8px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
   min-width: 2px;
 }
-.dist-pct { font-family: var(--mono); font-size: 9px; color: rgba(255,255,255,0.75); white-space: nowrap; }
-.dist-cnt { font-family: var(--mono); font-size: 9px; color: var(--muted); width: 40px; flex-shrink: 0; text-align: right; }
+.dist-pct {
+  font-family: var(--mono); font-size: 9px; color: rgba(255,255,255,0.8);
+  font-weight: 400; white-space: nowrap;
+}
+.dist-cnt {
+  font-family: var(--mono); font-size: 13px; color: var(--text);
+  font-weight: 700; width: 48px; flex-shrink: 0; text-align: right;
+}
 
 /* ── EVENTS TABLE ── */
 .events-summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
