@@ -167,13 +167,25 @@
 .kpi-rsrp::before { background: linear-gradient(90deg, var(--cyan), transparent 70%); }
 .kpi-rsrq::before { background: linear-gradient(90deg, var(--purple), transparent 70%); }
 .kpi-snr::before  { background: linear-gradient(90deg, var(--green), transparent 70%); }
-.kpi-label { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 6px; }
+.kpi-label {
+  font-family: var(--mono);
+  font-size: 11px; color: var(--text);
+  font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  margin-bottom: 8px;
+}
 .kpi-val { font-family: var(--cond); font-size: 42px; font-weight: 800; line-height: 1; }
 .kpi-val.v-good { color: var(--green); }
 .kpi-val.v-warn { color: var(--amber); }
 .kpi-val.v-bad  { color: var(--red); }
-.kpi-unit { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
-.kpi-desc { font-size: 11px; color: var(--text2); margin: 8px 0 6px; }
+.kpi-unit {
+  font-family: var(--mono);
+  font-size: 10px; color: var(--muted);
+  font-weight: 400; margin-top: 4px;
+}
+.kpi-desc {
+  font-size: 12px; color: var(--text2);
+  font-weight: 300; margin: 8px 0 6px;
+}
 .kpi-badge-wrap { margin-top: 4px; min-height: 20px; }
 .kpi-spark { height: 32px; margin-top: 10px; }
 .kpi-extra { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
@@ -204,7 +216,7 @@
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
 }
-.chart-card-title { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text); }
+.chart-card-title { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text); }
 .chart-legend-row { display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
 .leg { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 9px; color: var(--muted); }
 .leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -250,17 +262,17 @@
 .map-legend-panel {
   position: absolute; bottom: 12px; left: 12px;
   background: rgba(7,9,15,0.9); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 8px 12px;
-  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  border-radius: var(--radius); padding: 6px 10px;
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
   max-width: calc(100% - 24px); backdrop-filter: blur(8px);
-  font-family: var(--mono); font-size: 9px; color: var(--muted);
+  font-family: var(--mono); font-size: 8px; color: var(--muted);
 }
 .map-stats-overlay {
   position: absolute; top: 12px; right: 12px;
   background: rgba(7,9,15,0.9); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 8px 12px;
-  font-family: var(--mono); font-size: 10px; color: var(--text2);
-  backdrop-filter: blur(8px); min-width: 140px;
+  border-radius: var(--radius); padding: 6px 10px;
+  font-family: var(--mono); font-size: 9px; color: var(--text2);
+  backdrop-filter: blur(8px); min-width: 120px;
 }
 
 /* ── EMPTY STATE ── */

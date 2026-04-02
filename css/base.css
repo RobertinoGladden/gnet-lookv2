@@ -123,18 +123,19 @@ a:hover { text-decoration: underline; }
 }
 .info-card .ic-label {
   font-family: var(--mono);
-  font-size: 9px; color: var(--muted);
-  letter-spacing: 0.18em; text-transform: uppercase;
-  margin-bottom: 5px;
+  font-size: 10px; color: var(--text);
+  font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+  margin-bottom: 6px;
 }
 .info-card .ic-value {
-  font-size: 18px; font-weight: 600; color: var(--text);
+  font-size: 18px; font-weight: 500; color: var(--text);
   line-height: 1.2;
 }
-.info-card .ic-value.mono { font-size: 15px; }
+.info-card .ic-value.mono { font-size: 16px; }
 .info-card .ic-sub {
-  font-family: var(--mono); font-size: 10px; color: var(--muted);
-  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 10px; color: var(--muted);
+  font-weight: 300; margin-top: 4px;
 }
 .info-grid {
   display: grid;
