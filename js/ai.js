@@ -7,15 +7,15 @@
 
 window.AIAnalyst = (() => {
 
-  // ── HARDCODED API KEY — ganti dengan key Groq Anda ──
-  const GROQ_API_KEY = 'MASUKKAN_GROQ_API_KEY_ANDA_DISINI';
+  // ── FRONTEND → VERCEL PROXY ──
+  // Vercel function reads GROQ_API_KEY from environment variables.
+  const API_BASE = '/api/groq';
 
   let chatHistory = [];
   let isStreaming = false;
   let dataContext = null;
 
   const MODEL    = 'llama-3.3-70b-versatile';
-  const API_BASE = 'https://api.groq.com/openai/v1/chat/completions';
 
   // ── QUICK PROMPT TEMPLATES ──
   const QUICK_PROMPTS = {
@@ -148,18 +148,12 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
   async function sendMessage(userMsg) {
     if (isStreaming) return;
 
-    const apiKey = GROQ_API_KEY;
-    if (!apiKey || apiKey === 'MASUKKAN_GROQ_API_KEY_ANDA_DISINI') {
-      appendMessage('ai', '⚠ **API Key belum dikonfigurasi.** Buka file `js/ai.js` dan ganti nilai `GROQ_API_KEY` dengan key dari [console.groq.com](https://console.groq.com). Gratis & tidak perlu kartu kredit.');
-      return;
-    }
-
     isStreaming = true;
 
     if (!dataContext) dataContext = buildContext();
     if (!dataContext) {
       appendMessage('ai', '⚠ **Tidak ada data drive test.** Upload file `.txt` G-NetTrack Pro terlebih dahulu.');
-      isStreaming = false; return;
+      isStreaming = false; setSendEnabled(true); return;
     }
 
     // Remove welcome state
@@ -180,8 +174,7 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
       const res = await fetch(API_BASE, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           model: MODEL,
@@ -191,7 +184,7 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
           ],
           max_tokens: 2048,
           temperature: 0.7,
-          stream: true
+          stream: false
         })
       });
 
@@ -200,27 +193,11 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
         throw new Error(e?.error?.message || `HTTP ${res.status}`);
       }
 
+      const json = await res.json();
+      const fullText = json?.choices?.[0]?.message?.content || '';
+
       setTyping(false);
-      const bubble  = createStreamBubble();
-      let fullText  = '';
-      const reader  = res.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
-        for (const line of lines) {
-          const raw = line.slice(6).trim();
-          if (!raw || raw === '[DONE]') continue;
-          try {
-            const delta = JSON.parse(raw)?.choices?.[0]?.delta?.content || '';
-            if (delta) { fullText += delta; renderStreamBubble(bubble, fullText); scrollToBottom(); }
-          } catch (_) {}
-        }
-      }
-
+      const bubble = createStreamBubble();
       finalizeBubble(bubble, fullText);
       chatHistory.push({ role: 'assistant', content: fullText });
       if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
@@ -229,7 +206,7 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
       setTyping(false);
       let msg = `**Error:** ${err.message}`;
       if (err.message.includes('401') || err.message.includes('invalid_api_key'))
-        msg = '**API Key tidak valid.** Pastikan key dari [console.groq.com](https://console.groq.com) sudah benar di file `js/ai.js`.';
+        msg = '**API Key tidak valid.** Pastikan key `GROQ_API_KEY` sudah benar di environment variables Vercel.';
       else if (err.message.includes('429') || err.message.includes('rate_limit'))
         msg = '**Rate limit tercapai.** Free tier Groq: 30 req/menit, 14.400/hari. Tunggu sebentar lalu coba lagi.';
       else if (err.message.includes('503') || err.message.includes('overloaded'))
