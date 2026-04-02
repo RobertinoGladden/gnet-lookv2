@@ -34,7 +34,9 @@ function loadData() {
     const evRaw = sessionStorage.getItem('gnet_events');
     if (evRaw) EVENTS = JSON.parse(evRaw);
 
-    const filename = sessionStorage.getItem('gnet_filename') || 'unknown';
+    const storedFilename = sessionStorage.getItem('gnet_filename');
+    const fallbackFiles   = JSON.parse(sessionStorage.getItem('gnet_files') || '[]');
+    const filename = storedFilename || (Array.isArray(fallbackFiles) && fallbackFiles.length ? fallbackFiles.join(', ') : 'unknown');
     document.getElementById('fileInfoBadge').textContent = filename;
     document.getElementById('topbarTitle').textContent = `${filename} — ${DATA.length.toLocaleString()} pts`;
 
@@ -223,7 +225,7 @@ function buildEvents() {
         </div>
       </div>
       <div class="events-table-scroll">
-        <table>
+        <table class="events-table">
           <thead><tr>
             <th>#</th><th>Tipe</th><th>Waktu</th><th>From Cell</th><th>To Cell</th>
             <th>RSRP</th><th>RSRQ</th><th>SNR</th><th>eNB</th><th>Speed</th>

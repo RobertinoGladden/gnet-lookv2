@@ -407,6 +407,7 @@ async function startAnalyze() {
     sessionStorage.setItem('gnet_data',   JSON.stringify(parsed.data));
     sessionStorage.setItem('gnet_meta',   JSON.stringify(parsed.meta));
     sessionStorage.setItem('gnet_files',  JSON.stringify(txtFiles.map(f => f.name)));
+    sessionStorage.setItem('gnet_filename', txtFiles.map(f => f.name).join(', '));
 
     if (kmlFile) {
       ptxt.textContent = 'Memproses KML...';
