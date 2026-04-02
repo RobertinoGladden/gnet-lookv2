@@ -7,10 +7,14 @@
 
 let DATA   = [];
 let EVENTS = [];
+let EVENTS_PAGE = 0;
+const EVENTS_PER_PAGE = 100;
 
 // Expose globally for AI module
 Object.defineProperty(window, 'DATA',   { get: () => DATA });
 Object.defineProperty(window, 'EVENTS', { get: () => EVENTS });
+Object.defineProperty(window, 'EVENTS_PAGE', { get: () => EVENTS_PAGE });
+Object.defineProperty(window, 'EVENTS_PER_PAGE', { get: () => EVENTS_PER_PAGE });
 
 // ═══════════════════════════════════════════════
 // INIT
@@ -34,6 +38,7 @@ function loadData() {
     const evRaw = sessionStorage.getItem('gnet_events');
     if (evRaw) EVENTS = JSON.parse(evRaw);
 
+    EVENTS_PAGE = 0;
     const storedFilename = sessionStorage.getItem('gnet_filename');
     const fallbackFiles   = JSON.parse(sessionStorage.getItem('gnet_files') || '[]');
     const filename = storedFilename || (Array.isArray(fallbackFiles) && fallbackFiles.length ? fallbackFiles.join(', ') : 'unknown');
@@ -181,6 +186,11 @@ function extraCard(label, val, sub='') {
 function buildEvents() {
   if (!EVENTS.length) return;
 
+  const totalPages = Math.max(1, Math.ceil(EVENTS.length / EVENTS_PER_PAGE));
+  if (EVENTS_PAGE >= totalPages) EVENTS_PAGE = totalPages - 1;
+  const startIndex = EVENTS_PAGE * EVENTS_PER_PAGE;
+  const pageEvents = EVENTS.slice(startIndex, startIndex + EVENTS_PER_PAGE);
+
   const hoCount = EVENTS.filter(e=>e.type==='HANDOVER').length;
   const rsCount = EVENTS.filter(e=>e.type==='RESELECTION').length;
 
@@ -188,7 +198,8 @@ function buildEvents() {
   const nb = document.getElementById('eventsBadge');
   if (nb) { nb.textContent = EVENTS.length; nb.style.display = 'inline-block'; }
 
-  const rows = EVENTS.slice(0, 150).map((ev, i) => {
+  const rows = pageEvents.map((ev, idx) => {
+    const index = startIndex + idx + 1;
     const isHO   = ev.type === 'HANDOVER';
     const color  = isHO ? '#fbbf24' : '#c084fc';
     const label  = isHO ? '⇄ HO' : '↺ RS';
@@ -196,7 +207,7 @@ function buildEvents() {
     const cls    = isNaN(rsrpN) ? '' : rsrpN < -100 ? 'td-bad' : rsrpN < -90 ? 'td-warn' : 'td-ok';
     const t      = ev.timeDisp ? ev.timeDisp.substring(11) : '';
     return `<tr>
-      <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${i+1}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${index}</td>
       <td><span style="font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px;background:${color}18;color:${color};border:1px solid ${color}44">${label}</span></td>
       <td style="font-family:var(--mono);font-size:10px">${t}</td>
       <td style="font-size:10px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${ev.fromCell}">${ev.fromCell}</td>
@@ -213,12 +224,12 @@ function buildEvents() {
     <div class="events-summary">
       ${extraCard('Handover 4G→4G', hoCount, 'Inter-cell HO')}
       ${extraCard('Cell Reselection', rsCount, 'Idle mode RS')}
-      ${extraCard('Total Events', EVENTS.length, 'Ditampilkan: '+Math.min(150,EVENTS.length))}
+      ${extraCard('Total Events', EVENTS.length, 'Halaman: '+(EVENTS_PAGE+1)+' / '+totalPages)}
       ${extraCard('eNB Unik', [...new Set(EVENTS.map(e=>e.enb))].length, 'Unique eNodeBs')}
     </div>
     <div class="events-tbl-wrap">
       <div class="events-tbl-hdr">
-        📍 DAFTAR EVENTS (${Math.min(150,EVENTS.length)} / ${EVENTS.length})
+        📍 DAFTAR EVENTS (${startIndex+1}–${Math.min(startIndex+pageEvents.length, EVENTS.length)} / ${EVENTS.length})
         <div class="events-tbl-hdr-actions">
           <span onclick="toggleEventLayer('handover')">⇄ Toggle Handover Peta</span>
           <span onclick="toggleEventLayer('reselect')">↺ Toggle Reselect Peta</span>
@@ -233,7 +244,18 @@ function buildEvents() {
           <tbody>${rows}</tbody>
         </table>
       </div>
+      <div class="events-pagination">
+        <button onclick="changeEventsPage(-1)" ${EVENTS_PAGE === 0 ? 'disabled' : ''}>Prev</button>
+        <span class="page-info">Page ${EVENTS_PAGE + 1} / ${totalPages}</span>
+        <button onclick="changeEventsPage(1)" ${EVENTS_PAGE + 1 === totalPages ? 'disabled' : ''}>Next</button>
+      </div>
     </div>`;
+}
+
+function changeEventsPage(delta) {
+  const totalPages = Math.max(1, Math.ceil(EVENTS.length / EVENTS_PER_PAGE));
+  EVENTS_PAGE = Math.min(totalPages - 1, Math.max(0, EVENTS_PAGE + delta));
+  buildEvents();
 }
 
 // Handle inline KML upload on dashboard
@@ -244,6 +266,7 @@ function handleInlineKML(input) {
     const evts = GNetParser.parseKml(e.target.result);
     if (!evts.length) { showToast('Tidak ada event ditemukan dalam KML.'); return; }
     EVENTS = evts;
+    EVENTS_PAGE = 0;
     sessionStorage.setItem('gnet_events', JSON.stringify(EVENTS));
     GNetMap.addEvents(EVENTS);
     buildEvents();
@@ -321,15 +344,15 @@ function buildRawan() {
   if (!rawan.length) {
     el.innerHTML = `<div class="info-card" style="text-align:center;padding:32px">
       <div style="font-size:32px;margin-bottom:10px">✅</div>
-      <div style="color:var(--green);font-family:var(--cond);font-size:18px;font-weight:700">TIDAK ADA TITIK RAWAN</div>
-      <div style="color:var(--muted);font-size:12px;margin-top:6px">Semua parameter dalam batas normal</div>
+      <div style="color:var(--green);font-size:18px;font-weight:700">TIDAK ADA TITIK RAWAN</div>
+      <div style="color:var(--text3);font-size:12px;margin-top:6px">Semua parameter dalam batas normal</div>
     </div>`;
     return;
   }
 
-  const badRsrp  = DATA.filter(d=>d.rsrp<-100).length;
-  const badRsrq  = DATA.filter(d=>d.rsrq<-19).length;
-  const badSnr   = DATA.filter(d=>d.snr<-10).length;
+  const badRsrp  = rawan.filter(d=>d.rsrp<-100).length;
+  const badRsrq  = rawan.filter(d=>d.rsrq<-19).length;
+  const badSnr   = rawan.filter(d=>d.snr<-10).length;
   const pct      = v => ((v/DATA.length)*100).toFixed(1);
   const sample   = rawan.slice(0, 100);
 
@@ -338,12 +361,12 @@ function buildRawan() {
       ${extraCard('RSRP Rawan', `<span style="color:var(--red)">${badRsrp}</span>`, pct(badRsrp)+'% dari total')}
       ${extraCard('RSRQ Rawan', `<span style="color:var(--red)">${badRsrq}</span>`, pct(badRsrq)+'% dari total')}
       ${extraCard('SNR Rawan',  `<span style="color:var(--red)">${badSnr}</span>`,  pct(badSnr)+'% dari total')}
-      ${extraCard('Total Rawan',`<span style="color:var(--amber)">${rawan.length}</span>`, pct(rawan.length)+'% dari total')}
+      ${extraCard('Total Rawan',`<span style="color:var(--orange)">${rawan.length}</span>`, pct(rawan.length)+'% dari total')}
     </div>
     <div class="danger-wrap">
       <div class="danger-hdr">⚠ DAFTAR TITIK RAWAN — ${Math.min(100,rawan.length)} dari ${rawan.length} titik</div>
       <div class="danger-scroll">
-        <table>
+        <table class="rawan-table">
           <thead><tr>
             <th>#</th><th>Waktu</th><th>RSRP</th><th>RSRQ</th><th>SNR</th>
             <th>Cell</th><th>Lat</th><th>Lon</th><th>Issue</th>
@@ -354,14 +377,14 @@ function buildRawan() {
             if (d.rsrq<-19)  issues.push('RSRQ');
             if (d.snr<-10)   issues.push('SNR');
             return `<tr>
-              <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${i+1}</td>
-              <td style="font-family:var(--mono);font-size:10px">${d.timePart||''}</td>
+              <td style="font-family:var(--mono);font-size:10px;color:var(--text3)">${i+1}</td>
+              <td style="font-family:var(--mono);font-size:10px">${d.timePart || (d.tsDisp ? d.tsDisp.substring(11) : '')}</td>
               <td class="${d.rsrp<-100?'td-bad':'td-warn'}">${d.rsrp}</td>
               <td class="${d.rsrq<-19?'td-bad':'td-warn'}">${d.rsrq}</td>
               <td class="${d.snr<-10?'td-bad':d.snr<0?'td-warn':''}">${d.snr}</td>
               <td style="font-size:11px">${d.cellname||'—'}</td>
-              <td style="font-family:var(--mono);font-size:9px;color:var(--muted)">${d.lat?d.lat.toFixed(5):'—'}</td>
-              <td style="font-family:var(--mono);font-size:9px;color:var(--muted)">${d.lon?d.lon.toFixed(5):'—'}</td>
+              <td style="font-family:var(--mono);font-size:9px;color:var(--text3)">${d.lat?d.lat.toFixed(5):'—'}</td>
+              <td style="font-family:var(--mono);font-size:9px;color:var(--text3)">${d.lon?d.lon.toFixed(5):'—'}</td>
               <td>${issues.map(is=>`<span class="badge badge-bad" style="margin-right:2px">${is}</span>`).join('')}</td>
             </tr>`;
           }).join('')}</tbody>
