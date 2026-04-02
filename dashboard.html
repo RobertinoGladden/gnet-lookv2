@@ -5,10 +5,771 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>GNet Analyzer — Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/dashboard.css">
+<style>
+/* ════════════════════════════════════════
+   RESET & BASE
+════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f0f10;
+  --bg2: #161618;
+  --bg3: #1c1c1f;
+  --bg4: #222226;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.10);
+  --text: #e8e8ea;
+  --text2: #8b8b93;
+  --text3: #555560;
+  --cyan: #22d3ee;
+  --cyan-dim: rgba(34,211,238,0.12);
+  --green: #4ade80;
+  --green-dim: rgba(74,222,128,0.10);
+  --yellow: #fbbf24;
+  --yellow-dim: rgba(251,191,36,0.10);
+  --orange: #fb923c;
+  --red: #f87171;
+  --red-dim: rgba(248,113,113,0.10);
+  --purple: #a78bfa;
+  --mono: 'Geist Mono', monospace;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --radius: 10px;
+  --sidebar-w: 220px;
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ════════════════════════════════════════
+   SIDEBAR
+════════════════════════════════════════ */
+.sidebar {
+  position: fixed; top: 0; left: 0;
+  width: var(--sidebar-w); height: 100vh;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  z-index: 100;
+  transition: transform 0.25s ease;
+}
+.sidebar-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo {
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none; color: var(--text);
+}
+.logo-icon { color: var(--cyan); font-size: 16px; }
+.logo-text {
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.logo-accent { color: var(--cyan); }
+.sidebar-close {
+  display: none; background: none; border: none;
+  color: var(--text2); cursor: pointer; font-size: 16px; padding: 4px;
+}
+.sidebar-nav {
+  flex: 1; padding: 12px 10px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 7px;
+  text-decoration: none; color: var(--text2);
+  font-size: 13px; font-weight: 400;
+  transition: all 0.15s;
+  position: relative;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: var(--bg4); color: var(--text); }
+.nav-icon { font-size: 14px; width: 18px; text-align: center; }
+.nav-label { flex: 1; }
+.nav-badge {
+  background: var(--bg4); color: var(--text2);
+  font-family: var(--mono); font-size: 10px;
+  padding: 2px 6px; border-radius: 4px;
+  min-width: 22px; text-align: center;
+}
+.nav-badge-red { background: rgba(248,113,113,0.15); color: var(--red); }
+.nav-badge-ai { background: var(--cyan-dim); color: var(--cyan); font-weight: 500; }
+.nav-item-ai .nav-icon { color: var(--cyan); }
+.sidebar-footer {
+  padding: 12px 10px;
+  border-top: 1px solid var(--border);
+}
+.back-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 7px;
+  text-decoration: none; color: var(--text2);
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.back-btn:hover { background: var(--bg3); color: var(--text); }
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 99;
+}
+
+/* ════════════════════════════════════════
+   TOPBAR
+════════════════════════════════════════ */
+.topbar {
+  position: fixed; top: 0; left: var(--sidebar-w); right: 0;
+  height: 52px; background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 20px; gap: 12px; z-index: 90;
+}
+.menu-toggle {
+  display: none; flex-direction: column; gap: 4px;
+  background: none; border: none; cursor: pointer; padding: 4px;
+}
+.menu-toggle span {
+  width: 18px; height: 1.5px; background: var(--text2);
+  border-radius: 1px; transition: 0.2s;
+}
+.topbar-title {
+  font-family: var(--mono); font-size: 12px;
+  color: var(--text2); flex: 1;
+}
+.file-info-badge {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--cyan); padding: 3px 8px;
+  background: var(--cyan-dim);
+  border: 1px solid rgba(34,211,238,0.2);
+  border-radius: 5px;
+}
+
+/* ════════════════════════════════════════
+   MAIN
+════════════════════════════════════════ */
+.dashboard-main {
+  margin-left: var(--sidebar-w);
+  padding-top: 52px;
+  min-height: 100vh;
+}
+.loading-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 60vh; gap: 16px;
+}
+.loader-ring {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-text { font-family: var(--mono); font-size: 12px; color: var(--text2); }
+.no-data-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 60vh; gap: 12px; text-align: center;
+}
+.no-data-icon { font-size: 40px; }
+.back-home-btn {
+  margin-top: 8px; padding: 8px 16px; border-radius: 7px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text); text-decoration: none; font-size: 13px;
+  transition: 0.15s;
+}
+.back-home-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+/* ════════════════════════════════════════
+   DASH SECTIONS
+════════════════════════════════════════ */
+.dash-section {
+  padding: 32px 28px;
+  border-bottom: 1px solid var(--border);
+}
+.section-hdr {
+  display: flex; align-items: flex-start; gap: 16px;
+  margin-bottom: 24px;
+}
+.section-num {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  color: var(--text3); letter-spacing: 0.05em;
+  padding-top: 3px;
+}
+.ai-num { color: var(--cyan); font-size: 16px; }
+.section-title {
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.06em; color: var(--text); margin-bottom: 3px;
+}
+.section-sub { font-size: 12px; color: var(--text2); }
+.ai-title-badge {
+  display: inline-block;
+  font-size: 10px; font-family: var(--mono);
+  color: var(--green); background: var(--green-dim);
+  border: 1px solid rgba(74,222,128,0.2);
+  padding: 2px 7px; border-radius: 4px;
+  margin-left: 8px; vertical-align: middle; font-weight: 400;
+}
+
+/* ════════════════════════════════════════
+   INFO GRID
+════════════════════════════════════════ */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+.info-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  transition: border-color 0.15s;
+}
+.info-card:hover { border-color: var(--border2); }
+.info-card-label {
+  font-family: var(--mono); font-size: 9px; font-weight: 600;
+  letter-spacing: 0.1em; color: var(--text3);
+  text-transform: uppercase; margin-bottom: 6px;
+}
+.info-card-val {
+  font-family: var(--mono); font-size: 15px; font-weight: 500;
+  color: var(--text); line-height: 1.2;
+}
+.info-card-sub { font-size: 11px; color: var(--text2); margin-top: 4px; }
+
+/* ════════════════════════════════════════
+   KPI
+════════════════════════════════════════ */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  margin-bottom: 12px;
+}
+.kpi-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 20px 16px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.15s;
+}
+.kpi-card:hover { border-color: var(--border2); }
+.kpi-label {
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; color: var(--text3); margin-bottom: 8px;
+}
+.kpi-val {
+  font-family: var(--mono); font-size: 32px; font-weight: 500;
+  line-height: 1; margin-bottom: 4px;
+}
+.kpi-rsrp .kpi-val { color: var(--cyan); }
+.kpi-rsrq .kpi-val { color: var(--purple); }
+.kpi-snr  .kpi-val { color: var(--green); }
+.kpi-unit { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-bottom: 8px; }
+.kpi-desc { font-size: 11px; color: var(--text2); margin-bottom: 10px; }
+.kpi-badge-wrap { margin-bottom: 10px; }
+.kpi-badge {
+  display: inline-block; font-family: var(--mono); font-size: 10px; font-weight: 600;
+  padding: 3px 8px; border-radius: 4px; letter-spacing: 0.05em;
+}
+.badge-best    { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.2); }
+.badge-good    { background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.2); }
+.badge-normal  { background: rgba(251,191,36,0.10); color: var(--yellow); border: 1px solid rgba(251,191,36,0.2); }
+.badge-bad     { background: rgba(251,146,60,0.10); color: var(--orange); border: 1px solid rgba(251,146,60,0.2); }
+.badge-worst   { background: rgba(248,113,113,0.10); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+.kpi-spark { height: 36px; }
+.kpi-extra {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+.kpi-extra-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 7px; padding: 10px 12px;
+}
+.kpi-extra-label {
+  font-family: var(--mono); font-size: 9px; color: var(--text3);
+  letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px;
+}
+.kpi-extra-val {
+  font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text);
+}
+
+/* ════════════════════════════════════════
+   CHART
+════════════════════════════════════════ */
+.chart-tabs {
+  display: flex; gap: 4px; margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.chart-tab {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  padding: 6px 14px; border-radius: 6px;
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text2); cursor: pointer; transition: all 0.15s;
+  letter-spacing: 0.04em;
+}
+.chart-tab:hover { border-color: var(--border2); color: var(--text); }
+.chart-tab.active { background: var(--cyan-dim); border-color: rgba(34,211,238,0.3); color: var(--cyan); }
+.chart-panel { display: none; }
+.chart-panel.active { display: block; }
+.chart-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+}
+.chart-card-hdr {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 16px;
+}
+.chart-card-title {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  color: var(--text2); letter-spacing: 0.04em; margin-bottom: 6px;
+}
+.chart-legend-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+.leg-dot { width: 7px; height: 7px; border-radius: 50%; }
+.chart-wrap { position: relative; height: 220px; }
+.chart-wrap-tall { height: 300px; }
+.dl-btn {
+  font-family: var(--mono); font-size: 10px;
+  padding: 4px 10px; border-radius: 5px;
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text2); cursor: pointer; transition: 0.15s;
+  white-space: nowrap;
+}
+.dl-btn:hover { border-color: var(--border2); color: var(--text); }
+
+/* ════════════════════════════════════════
+   MAP
+════════════════════════════════════════ */
+.map-toolbar {
+  display: flex; gap: 12px; align-items: center;
+  margin-bottom: 12px; flex-wrap: wrap;
+}
+.map-layer-btns, .map-event-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.map-btn {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  padding: 5px 12px; border-radius: 6px;
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text2); cursor: pointer; transition: 0.15s;
+}
+.map-btn:hover { border-color: var(--border2); color: var(--text); }
+.map-btn.active { background: var(--cyan-dim); border-color: rgba(34,211,238,0.3); color: var(--cyan); }
+.map-evt-btn {
+  font-family: var(--mono); font-size: 11px;
+  padding: 5px 12px; border-radius: 6px;
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text2); cursor: pointer; transition: 0.15s;
+}
+.map-evt-btn:hover { border-color: rgba(74,222,128,0.3); color: var(--green); }
+.map-evt-btn[data-active="true"] { background: var(--green-dim); border-color: rgba(74,222,128,0.3); color: var(--green); }
+.map-evt-purple:hover { border-color: rgba(167,139,250,0.3); color: var(--purple); }
+.map-evt-purple[data-active="true"] { background: rgba(167,139,250,0.1); border-color: rgba(167,139,250,0.3); color: var(--purple); }
+.map-container {
+  position: relative; border-radius: var(--radius); overflow: hidden;
+  border: 1px solid var(--border);
+}
+#map { height: 420px; }
+.map-legend-panel {
+  position: absolute; bottom: 16px; left: 16px; z-index: 500;
+  background: rgba(15,15,16,0.9); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 12px 14px; font-family: var(--mono);
+  backdrop-filter: blur(8px);
+}
+.map-stats-overlay {
+  position: absolute; top: 16px; right: 16px; z-index: 500;
+  background: rgba(15,15,16,0.9); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 10px 12px;
+  backdrop-filter: blur(8px);
+}
+
+/* ════════════════════════════════════════
+   EVENTS
+════════════════════════════════════════ */
+.events-summary { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.event-stat {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 16px;
+}
+.event-stat-val {
+  font-family: var(--mono); font-size: 22px; font-weight: 500;
+  color: var(--text); line-height: 1;
+}
+.event-stat-lbl { font-size: 11px; color: var(--text2); margin-top: 4px; }
+.events-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+.events-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.events-table th {
+  background: var(--bg2); padding: 10px 14px;
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase;
+  text-align: left; border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.events-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--text2); }
+.events-table tr:last-child td { border-bottom: none; }
+.events-table tr:hover td { background: var(--bg2); }
+.ev-badge {
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  padding: 2px 7px; border-radius: 4px;
+}
+.ev-ho { background: var(--green-dim); color: var(--green); border: 1px solid rgba(74,222,128,0.2); }
+.ev-rs { background: rgba(167,139,250,0.1); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 48px 24px; gap: 10px; text-align: center;
+}
+.empty-icon { font-size: 28px; }
+.empty-state p { font-size: 13px; color: var(--text2); max-width: 360px; }
+.empty-state code {
+  font-family: var(--mono); font-size: 11px;
+  background: var(--bg3); padding: 1px 5px; border-radius: 3px;
+  color: var(--cyan);
+}
+.upload-kml-inline {
+  font-family: var(--mono); font-size: 11px;
+  padding: 7px 14px; border-radius: 7px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text); cursor: pointer; transition: 0.15s;
+}
+.upload-kml-inline:hover { border-color: var(--cyan); color: var(--cyan); }
+
+/* ════════════════════════════════════════
+   DISTRIBUSI
+════════════════════════════════════════ */
+.dist-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.std-tables { display: flex; flex-direction: column; gap: 12px; }
+.std-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.std-card-hdr {
+  padding: 10px 14px; font-family: var(--mono); font-size: 10px;
+  font-weight: 600; letter-spacing: 0.06em;
+}
+.std-cyan { background: var(--cyan-dim); color: var(--cyan); border-bottom: 1px solid rgba(34,211,238,0.2); }
+.std-purple { background: rgba(167,139,250,0.08); color: var(--purple); border-bottom: 1px solid rgba(167,139,250,0.2); }
+.std-green { background: var(--green-dim); color: var(--green); border-bottom: 1px solid rgba(74,222,128,0.2); }
+.std-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.std-table th {
+  background: var(--bg3); padding: 7px 12px;
+  font-family: var(--mono); font-size: 9px; font-weight: 500;
+  color: var(--text3); letter-spacing: 0.06em; text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.std-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); }
+.std-table tr:last-child td { border-bottom: none; }
+.mono { font-family: var(--mono); font-size: 11px; }
+.fw { font-weight: 500; }
+.c-blue { color: #60a5fa; } .c-green { color: var(--green); }
+.c-yellow { color: var(--yellow); } .c-orange { color: var(--orange); }
+.c-red { color: var(--red); }
+.clr-tag {
+  display: inline-block; font-size: 10px; font-family: var(--mono);
+  padding: 2px 6px; border-radius: 3px;
+  background: rgba(255,255,255,0.05); color: var(--c);
+}
+.dist-bars-col { display: flex; flex-direction: column; gap: 12px; }
+.dist-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+}
+.dist-card-hdr {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  color: var(--text2); margin-bottom: 12px;
+}
+.dist-bars { display: flex; flex-direction: column; gap: 7px; }
+.dist-row { display: flex; align-items: center; gap: 8px; }
+.dist-row-label { font-family: var(--mono); font-size: 10px; color: var(--text2); width: 90px; flex-shrink: 0; }
+.dist-bar-wrap { flex: 1; height: 6px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
+.dist-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+.dist-row-pct { font-family: var(--mono); font-size: 10px; color: var(--text2); width: 36px; text-align: right; }
+
+/* ════════════════════════════════════════
+   RAWAN TABLE
+════════════════════════════════════════ */
+.rawan-summary {
+  display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.rawan-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+.rawan-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.rawan-table th {
+  background: var(--bg2); padding: 10px 12px;
+  font-family: var(--mono); font-size: 9px; font-weight: 500;
+  color: var(--text3); letter-spacing: 0.06em; text-align: left;
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+.rawan-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); font-family: var(--mono); font-size: 11px; }
+.rawan-table tr:last-child td { border-bottom: none; }
+.rawan-table tr:hover td { background: var(--bg2); }
+.col-rsrp { color: var(--cyan); }
+.col-rsrq { color: var(--purple); }
+.col-snr  { color: var(--green); }
+.col-bad  { color: var(--red); }
+
+/* ════════════════════════════════════════
+   AI CHATBOT — REDESIGNED
+════════════════════════════════════════ */
+.ai-chatbot-wrap {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 600px;
+}
+
+/* Header */
+.ai-chat-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg3);
+  flex-shrink: 0;
+}
+.ai-chat-header-left { display: flex; align-items: center; gap: 10px; }
+.ai-chat-avatar {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.25);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--cyan); font-size: 13px;
+}
+.ai-chat-name {
+  font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--text);
+}
+.ai-chat-status {
+  font-size: 11px; color: var(--text2);
+  display: flex; align-items: center; gap: 5px;
+}
+.ai-status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(74,222,128,0.6);
+  animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+}
+.ai-model-badge {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  padding: 3px 8px; border-radius: 4px;
+  background: var(--green-dim); color: var(--green);
+  border: 1px solid rgba(74,222,128,0.2);
+}
+
+/* Quick prompts bar */
+.ai-quick-bar {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.ai-quick-bar-label {
+  font-family: var(--mono); font-size: 9px; font-weight: 600;
+  letter-spacing: 0.1em; color: var(--text3);
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.ai-quick-chips {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.ai-chip {
+  font-family: var(--mono); font-size: 11px;
+  padding: 5px 12px; border-radius: 20px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text2); cursor: pointer; transition: all 0.15s;
+  white-space: nowrap;
+}
+.ai-chip:hover {
+  background: var(--cyan-dim); border-color: rgba(34,211,238,0.3);
+  color: var(--cyan);
+}
+.ai-chip.loading {
+  opacity: 0.5; cursor: wait;
+  animation: chip-pulse 1s infinite;
+}
+@keyframes chip-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.8; } }
+
+/* Messages */
+.ai-messages {
+  flex: 1; overflow-y: auto; padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 14px;
+  scroll-behavior: smooth;
+}
+.ai-messages::-webkit-scrollbar { width: 4px; }
+.ai-messages::-webkit-scrollbar-track { background: transparent; }
+.ai-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* Welcome state */
+.ai-welcome {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; flex: 1; text-align: center;
+  padding: 24px; gap: 10px; margin: auto;
+}
+.ai-welcome-icon {
+  font-size: 28px; color: var(--cyan);
+  width: 52px; height: 52px; border-radius: 12px;
+  background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.2);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 4px;
+}
+.ai-welcome-title {
+  font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--text);
+}
+.ai-welcome-sub { font-size: 12px; color: var(--text2); max-width: 340px; line-height: 1.5; }
+
+/* Message bubbles */
+.ai-message {
+  display: flex; gap: 10px; align-items: flex-start;
+  animation: msg-in 0.2s ease;
+}
+@keyframes msg-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.ai-message-user { flex-direction: row-reverse; }
+.ai-msg-avatar {
+  width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+}
+.ai-msg-avatar-ai {
+  background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.2);
+  color: var(--cyan);
+}
+.ai-msg-avatar-user {
+  background: var(--bg4); border: 1px solid var(--border2);
+  color: var(--text2); font-size: 11px;
+}
+.ai-msg-bubble {
+  max-width: 78%; padding: 11px 14px; border-radius: 10px;
+  font-size: 13px; line-height: 1.6;
+}
+.ai-msg-bubble-ai {
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 2px 10px 10px 10px;
+}
+.ai-msg-bubble-user {
+  background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.2);
+  color: var(--text);
+  border-radius: 10px 2px 10px 10px;
+  text-align: right;
+}
+
+/* Markdown inside bubbles */
+.ai-msg-bubble-ai h3 {
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  color: var(--cyan); margin: 12px 0 6px; letter-spacing: 0.04em;
+}
+.ai-msg-bubble-ai p { margin-bottom: 8px; }
+.ai-msg-bubble-ai ul, .ai-msg-bubble-ai ol { padding-left: 16px; margin-bottom: 8px; }
+.ai-msg-bubble-ai li { margin-bottom: 4px; }
+.ai-msg-bubble-ai strong { color: var(--text); font-weight: 600; }
+.ai-msg-bubble-ai code {
+  font-family: var(--mono); font-size: 11px;
+  background: var(--bg4); padding: 1px 5px; border-radius: 3px;
+  color: var(--cyan);
+}
+.ai-msg-bubble-ai pre {
+  font-family: var(--mono); font-size: 11px;
+  background: var(--bg4); border: 1px solid var(--border);
+  padding: 10px 12px; border-radius: 6px; overflow-x: auto;
+  margin: 8px 0; white-space: pre-wrap;
+}
+.ai-msg-bubble-ai hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+.ai-badge-good { background: rgba(74,222,128,0.12); color: var(--green); padding: 1px 5px; border-radius: 3px; font-family: var(--mono); font-size: 11px; }
+.ai-badge-warn { background: rgba(251,191,36,0.12); color: var(--yellow); padding: 1px 5px; border-radius: 3px; font-family: var(--mono); font-size: 11px; }
+.ai-badge-bad  { background: rgba(248,113,113,0.12); color: var(--red); padding: 1px 5px; border-radius: 3px; font-family: var(--mono); font-size: 11px; }
+
+/* Typing */
+.ai-typing {
+  display: none; align-items: center; gap: 10px; padding: 0 18px 12px;
+  flex-shrink: 0;
+}
+.ai-typing-avatar {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--cyan); font-size: 12px;
+}
+.ai-typing-dots { display: flex; gap: 4px; align-items: center; }
+.ai-typing-dots span {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--text3); animation: dot-bounce 1.2s infinite;
+}
+.ai-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.ai-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dot-bounce { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-5px); background: var(--cyan); } }
+.ai-cursor {
+  display: inline-block; width: 2px; height: 13px;
+  background: var(--cyan); border-radius: 1px;
+  margin-left: 2px; vertical-align: middle;
+  animation: blink 0.8s infinite;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* Input */
+.ai-chat-input-wrap {
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  display: flex; gap: 8px; align-items: flex-end;
+  flex-shrink: 0;
+}
+.ai-chat-input {
+  flex: 1; background: var(--bg3);
+  border: 1px solid var(--border2); border-radius: 8px;
+  color: var(--text); font-family: var(--sans); font-size: 13px;
+  padding: 9px 12px; resize: none; outline: none;
+  min-height: 38px; max-height: 120px;
+  transition: border-color 0.15s;
+  line-height: 1.5;
+}
+.ai-chat-input::placeholder { color: var(--text3); }
+.ai-chat-input:focus { border-color: rgba(34,211,238,0.4); }
+.ai-send-btn {
+  width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0;
+  background: var(--cyan); border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s; color: var(--bg);
+}
+.ai-send-btn:hover { background: #38e8ff; transform: scale(1.04); }
+.ai-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ════════════════════════════════════════
+   SCROLL TOP & TOAST
+════════════════════════════════════════ */
+.scroll-top {
+  position: fixed; bottom: 24px; right: 24px; z-index: 200;
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text2); font-size: 14px; cursor: pointer;
+  display: none; align-items: center; justify-content: center;
+  transition: 0.15s;
+}
+.scroll-top:hover { border-color: var(--cyan); color: var(--cyan); }
+.toast {
+  position: fixed; bottom: 70px; right: 24px; z-index: 300;
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 10px 16px;
+  font-size: 12px; color: var(--text2);
+  opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  font-family: var(--mono);
+}
+.toast.show { opacity: 1; }
+
+/* ════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: none; }
+  .sidebar-close { display: block; }
+  .sidebar-overlay.open { display: block; }
+  .topbar { left: 0; }
+  .dashboard-main { margin-left: 0; }
+  .menu-toggle { display: flex; }
+  .kpi-grid { grid-template-columns: 1fr; }
+  .dist-layout { grid-template-columns: 1fr; }
+  .ai-chatbot-wrap { height: 500px; }
+}
+</style>
 </head>
 <body class="dashboard-page">
 
@@ -21,58 +782,46 @@
     </a>
     <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">✕</button>
   </div>
-
   <nav class="sidebar-nav">
     <a href="#info" class="nav-item active" data-section="info">
-      <span class="nav-icon">ℹ</span>
-      <span class="nav-label">Info DT</span>
+      <span class="nav-icon">ℹ</span><span class="nav-label">Info DT</span>
     </a>
     <a href="#cell" class="nav-item" data-section="cell">
-      <span class="nav-icon">📶</span>
-      <span class="nav-label">Serving Cell</span>
+      <span class="nav-icon">📶</span><span class="nav-label">Serving Cell</span>
     </a>
     <a href="#kpi" class="nav-item" data-section="kpi">
-      <span class="nav-icon">📈</span>
-      <span class="nav-label">KPI</span>
+      <span class="nav-icon">📈</span><span class="nav-label">KPI</span>
     </a>
     <a href="#grafik" class="nav-item" data-section="grafik">
-      <span class="nav-icon">〰</span>
-      <span class="nav-label">Grafik</span>
+      <span class="nav-icon">〰</span><span class="nav-label">Grafik</span>
     </a>
     <a href="#peta" class="nav-item" data-section="peta">
-      <span class="nav-icon">🗺</span>
-      <span class="nav-label">Peta Sinyal</span>
+      <span class="nav-icon">🗺</span><span class="nav-label">Peta Sinyal</span>
     </a>
     <a href="#events" class="nav-item" data-section="events" id="navEvents">
-      <span class="nav-icon">⇄</span>
-      <span class="nav-label">Events</span>
+      <span class="nav-icon">⇄</span><span class="nav-label">Events</span>
       <span class="nav-badge" id="eventsBadge" style="display:none">0</span>
     </a>
     <a href="#distribusi" class="nav-item" data-section="distribusi">
-      <span class="nav-icon">▦</span>
-      <span class="nav-label">Distribusi</span>
+      <span class="nav-icon">▦</span><span class="nav-label">Distribusi</span>
     </a>
     <a href="#rawan" class="nav-item" data-section="rawan">
-      <span class="nav-icon">⚠</span>
-      <span class="nav-label">Titik Rawan</span>
+      <span class="nav-icon">⚠</span><span class="nav-label">Titik Rawan</span>
       <span class="nav-badge nav-badge-red" id="rawanBadge">0</span>
     </a>
     <a href="#ai" class="nav-item nav-item-ai" data-section="ai">
-      <span class="nav-icon">✦</span>
-      <span class="nav-label">AI Analyst</span>
-      <span class="nav-badge nav-badge-ai">NEW</span>
+      <span class="nav-icon">✦</span><span class="nav-label">AI Analyst</span>
+      <span class="nav-badge nav-badge-ai">AI</span>
     </a>
   </nav>
-
   <div class="sidebar-footer">
     <a href="index.html" class="back-btn">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       Upload Baru
     </a>
   </div>
 </aside>
 
-<!-- SIDEBAR OVERLAY -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <!-- TOPBAR -->
@@ -86,27 +835,22 @@
   </div>
 </div>
 
-<!-- MAIN CONTENT -->
+<!-- MAIN -->
 <main class="dashboard-main" id="dashMain">
-
-  <!-- LOADING STATE -->
   <div class="loading-state" id="loadingState">
     <div class="loader-ring"></div>
     <div class="loader-text">Memuat data...</div>
   </div>
-
-  <!-- NO DATA STATE -->
   <div class="no-data-state" id="noDataState" style="display:none">
     <div class="no-data-icon">📡</div>
     <h2>Tidak ada data</h2>
-    <p>Silakan upload file G-NetTrack Pro terlebih dahulu</p>
+    <p style="color:var(--text2);font-size:13px;">Silakan upload file G-NetTrack Pro terlebih dahulu</p>
     <a href="index.html" class="back-home-btn">← Kembali ke Upload</a>
   </div>
 
-  <!-- DASHBOARD CONTENT -->
   <div id="dashContent" style="display:none">
 
-    <!-- ── SECTION 01: INFO ── -->
+    <!-- 01 INFO -->
     <section class="dash-section" id="info">
       <div class="section-hdr">
         <div class="section-num">01</div>
@@ -118,7 +862,7 @@
       <div class="info-grid" id="infoGrid"></div>
     </section>
 
-    <!-- ── SECTION 02: SERVING CELL ── -->
+    <!-- 02 SERVING CELL -->
     <section class="dash-section" id="cell">
       <div class="section-hdr">
         <div class="section-num">02</div>
@@ -130,7 +874,7 @@
       <div class="info-grid" id="cellGrid"></div>
     </section>
 
-    <!-- ── SECTION 03: KPI ── -->
+    <!-- 03 KPI -->
     <section class="dash-section" id="kpi">
       <div class="section-hdr">
         <div class="section-num">03</div>
@@ -168,7 +912,7 @@
       <div class="kpi-extra" id="kpiExtra"></div>
     </section>
 
-    <!-- ── SECTION 04: GRAFIK ── -->
+    <!-- 04 GRAFIK -->
     <section class="dash-section" id="grafik">
       <div class="section-hdr">
         <div class="section-num">04</div>
@@ -177,8 +921,6 @@
           <div class="section-sub">Time series RSRP, RSRQ, SNR, Throughput</div>
         </div>
       </div>
-
-      <!-- CHART TABS -->
       <div class="chart-tabs">
         <button class="chart-tab active" data-chart="rsrp">RSRP</button>
         <button class="chart-tab" data-chart="rsrq">RSRQ</button>
@@ -186,19 +928,16 @@
         <button class="chart-tab" data-chart="tp">Throughput</button>
         <button class="chart-tab" data-chart="all">Semua</button>
       </div>
-
       <div class="chart-panels">
-
         <div class="chart-panel active" id="panel-rsrp">
           <div class="chart-card">
             <div class="chart-card-hdr">
               <div>
                 <div class="chart-card-title">RSRP — Reference Signal Received Power</div>
                 <div class="chart-legend-row">
-                  <span class="leg"><span class="leg-dot" style="background:#38bdf8"></span>RSRP</span>
+                  <span class="leg"><span class="leg-dot" style="background:#22d3ee"></span>RSRP</span>
                   <span class="leg"><span class="leg-dot" style="background:#4ade80"></span>−80 dBm</span>
                   <span class="leg"><span class="leg-dot" style="background:#fbbf24"></span>−100 dBm</span>
-                  <span class="leg"><span class="leg-dot" style="background:#f87171"></span>Rawan</span>
                 </div>
               </div>
               <button class="dl-btn" onclick="downloadChart('rsrpChart','RSRP')">⬇ PNG</button>
@@ -206,17 +945,13 @@
             <div class="chart-wrap"><canvas id="rsrpChart"></canvas></div>
           </div>
         </div>
-
         <div class="chart-panel" id="panel-rsrq">
           <div class="chart-card">
             <div class="chart-card-hdr">
               <div>
                 <div class="chart-card-title">RSRQ — Reference Signal Received Quality</div>
                 <div class="chart-legend-row">
-                  <span class="leg"><span class="leg-dot" style="background:#c084fc"></span>RSRQ</span>
-                  <span class="leg"><span class="leg-dot" style="background:#4ade80"></span>−10 dB</span>
-                  <span class="leg"><span class="leg-dot" style="background:#f87171"></span>−19 dB</span>
-                  <span class="leg"><span class="leg-dot" style="background:#f87171"></span>Rawan</span>
+                  <span class="leg"><span class="leg-dot" style="background:#a78bfa"></span>RSRQ</span>
                 </div>
               </div>
               <button class="dl-btn" onclick="downloadChart('rsrqChart','RSRQ')">⬇ PNG</button>
@@ -224,16 +959,13 @@
             <div class="chart-wrap"><canvas id="rsrqChart"></canvas></div>
           </div>
         </div>
-
         <div class="chart-panel" id="panel-snr">
           <div class="chart-card">
             <div class="chart-card-hdr">
               <div>
                 <div class="chart-card-title">SNR — Signal to Noise Ratio</div>
                 <div class="chart-legend-row">
-                  <span class="leg"><span class="leg-dot" style="background:#4ade80"></span>≥ 0 dB</span>
-                  <span class="leg"><span class="leg-dot" style="background:#fb923c"></span>&lt; 0 dB</span>
-                  <span class="leg"><span class="leg-dot" style="background:#f87171"></span>Rawan</span>
+                  <span class="leg"><span class="leg-dot" style="background:#4ade80"></span>SNR</span>
                 </div>
               </div>
               <button class="dl-btn" onclick="downloadChart('snrChart','SNR')">⬇ PNG</button>
@@ -241,14 +973,13 @@
             <div class="chart-wrap"><canvas id="snrChart"></canvas></div>
           </div>
         </div>
-
         <div class="chart-panel" id="panel-tp">
           <div class="chart-card">
             <div class="chart-card-hdr">
               <div>
                 <div class="chart-card-title">Throughput — DL &amp; UL (Mbps)</div>
                 <div class="chart-legend-row">
-                  <span class="leg"><span class="leg-dot" style="background:#38bdf8"></span>Download</span>
+                  <span class="leg"><span class="leg-dot" style="background:#22d3ee"></span>Download</span>
                   <span class="leg"><span class="leg-dot" style="background:#fb923c"></span>Upload</span>
                 </div>
               </div>
@@ -257,7 +988,6 @@
             <div class="chart-wrap"><canvas id="tpChart"></canvas></div>
           </div>
         </div>
-
         <div class="chart-panel" id="panel-all">
           <div class="chart-card">
             <div class="chart-card-hdr">
@@ -266,11 +996,10 @@
             <div class="chart-wrap chart-wrap-tall"><canvas id="allChart"></canvas></div>
           </div>
         </div>
-
       </div>
     </section>
 
-    <!-- ── SECTION 05: PETA ── -->
+    <!-- 05 PETA -->
     <section class="dash-section" id="peta">
       <div class="section-hdr">
         <div class="section-num">05</div>
@@ -279,7 +1008,6 @@
           <div class="section-sub">Visualisasi geografis parameter jaringan</div>
         </div>
       </div>
-
       <div class="map-toolbar">
         <div class="map-layer-btns" id="mapLayerBtns">
           <button class="map-btn active" data-layer="rsrp">RSRP</button>
@@ -292,7 +1020,6 @@
           <button class="map-evt-btn map-evt-purple" id="btnReselect" data-active="false" onclick="toggleEventLayer('reselect')">↺ Reselect</button>
         </div>
       </div>
-
       <div class="map-container">
         <div id="map"></div>
         <div class="map-legend-panel" id="mapLegend"></div>
@@ -300,7 +1027,7 @@
       </div>
     </section>
 
-    <!-- ── SECTION 06: EVENTS ── -->
+    <!-- 06 EVENTS -->
     <section class="dash-section" id="events">
       <div class="section-hdr">
         <div class="section-num">06</div>
@@ -312,7 +1039,7 @@
       <div id="eventsContent">
         <div class="empty-state">
           <div class="empty-icon">📍</div>
-          <p>Upload file <code>.kml</code> events untuk melihat data handover &amp; cell reselection di sini dan pada peta.</p>
+          <p>Upload file <code>.kml</code> events untuk melihat data handover &amp; cell reselection.</p>
           <button class="upload-kml-inline" onclick="document.getElementById('kmlInlineInput').click()">
             Upload .KML Sekarang
             <input type="file" id="kmlInlineInput" accept=".kml" style="display:none" onchange="handleInlineKML(this)">
@@ -321,7 +1048,7 @@
       </div>
     </section>
 
-    <!-- ── SECTION 07: DISTRIBUSI ── -->
+    <!-- 07 DISTRIBUSI -->
     <section class="dash-section" id="distribusi">
       <div class="section-hdr">
         <div class="section-num">07</div>
@@ -330,9 +1057,7 @@
           <div class="section-sub">Kategori parameter dan persentase sebaran data</div>
         </div>
       </div>
-
       <div class="dist-layout">
-        <!-- STANDAR TABLES -->
         <div class="std-tables">
           <div class="std-card">
             <div class="std-card-hdr std-cyan">Standar RSRP (dBm)</div>
@@ -374,8 +1099,6 @@
             </table>
           </div>
         </div>
-
-        <!-- DISTRIBUSI BARS -->
         <div class="dist-bars-col">
           <div class="dist-card">
             <div class="dist-card-hdr">Distribusi RSRP</div>
@@ -393,7 +1116,7 @@
       </div>
     </section>
 
-    <!-- ── SECTION 08: TITIK RAWAN ── -->
+    <!-- 08 TITIK RAWAN -->
     <section class="dash-section" id="rawan">
       <div class="section-hdr">
         <div class="section-num">08</div>
@@ -405,119 +1128,79 @@
       <div id="rawanContent"></div>
     </section>
 
-    <!-- ── SECTION 09: AI ANALYST ── -->
+    <!-- 09 AI ANALYST -->
     <section class="dash-section" id="ai">
       <div class="section-hdr">
         <div class="section-num ai-num">✦</div>
         <div>
-          <div class="section-title">AI ANALYST <span class="ai-title-badge">Powered by Groq · Free</span></div>
-          <div class="section-sub">Analisis otomatis & chat interaktif berbasis data drive test Anda</div>
+          <div class="section-title">AI ANALYST <span class="ai-title-badge">Groq · Llama 3.3 70B</span></div>
+          <div class="section-sub">Chat interaktif berbasis data drive test LTE/5G Anda</div>
         </div>
       </div>
 
-      <!-- API KEY GATE -->
-      <div id="aiApiGate" class="ai-gate">
-        <div class="ai-gate-icon">🔑</div>
-        <h3>Masukkan Groq API Key</h3>
-        <p>Gratis! Dapatkan API key dari Groq AI Studio. Key hanya tersimpan di browser tab ini — tidak pernah dikirim ke server manapun.</p>
-        <div class="ai-key-row">
-          <input type="password" id="aiApiKeyInput" class="ai-key-input" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
-          <button class="ai-key-btn" onclick="AIAnalyst.saveKey()">Simpan & Mulai</button>
-        </div>
-        <div class="ai-gate-note">
-          Daftar gratis di <a href="https://aistudio.groq.com/apikey" target="_blank">aistudio.groq.com/apikey</a> · Tidak perlu kartu kredit · 1.500 request/hari gratis
-        </div>
-      </div>
-
-      <!-- AI PANEL (shown after key is set) -->
-      <div id="aiPanel" style="display:none">
-
-        <!-- KEY STATUS BAR -->
-        <div class="ai-key-status">
-          <span class="ai-key-indicator">
-            <span class="pulse-dot"></span>
-            LLama 3.370b terhubung · Free tier
-          </span>
-          <button class="ai-change-key-btn" onclick="AIAnalyst.changeKey()">Ganti Key</button>
-        </div>
-
-        <!-- QUICK ANALYSIS BUTTONS -->
-        <div class="ai-quick-section">
-          <div class="ai-quick-label">⚡ Analisis Cepat</div>
-          <div class="ai-quick-grid">
-            <button class="ai-quick-btn" data-prompt="full">
-              <span class="ai-quick-icon">📋</span>
-              <span class="ai-quick-title">Laporan Lengkap</span>
-              <span class="ai-quick-desc">Analisis komprehensif semua parameter</span>
-            </button>
-            <button class="ai-quick-btn" data-prompt="kpi">
-              <span class="ai-quick-icon">📈</span>
-              <span class="ai-quick-title">Evaluasi KPI</span>
-              <span class="ai-quick-desc">RSRP, RSRQ, SNR vs standar</span>
-            </button>
-            <button class="ai-quick-btn" data-prompt="coverage">
-              <span class="ai-quick-icon">🗺</span>
-              <span class="ai-quick-title">Analisis Coverage</span>
-              <span class="ai-quick-desc">Distribusi sinyal & area bermasalah</span>
-            </button>
-            <button class="ai-quick-btn" data-prompt="handover">
-              <span class="ai-quick-icon">⇄</span>
-              <span class="ai-quick-title">Analisis Handover</span>
-              <span class="ai-quick-desc">Evaluasi stabilitas & frekuensi HO</span>
-            </button>
-            <button class="ai-quick-btn" data-prompt="throughput">
-              <span class="ai-quick-icon">🚀</span>
-              <span class="ai-quick-title">Throughput</span>
-              <span class="ai-quick-desc">Analisis kecepatan DL/UL</span>
-            </button>
-            <button class="ai-quick-btn" data-prompt="recommend">
-              <span class="ai-quick-icon">🛠</span>
-              <span class="ai-quick-title">Rekomendasi</span>
-              <span class="ai-quick-desc">Saran optimasi & improvement</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- AI CHAT AREA -->
-        <div class="ai-chat-container">
-          <div class="ai-chat-messages" id="aiMessages">
-            <div class="ai-welcome">
-              <div class="ai-welcome-icon">✦</div>
-              <div class="ai-welcome-title">AI Analyst siap membantu</div>
-              <div class="ai-welcome-sub">Pilih analisis cepat di atas atau ketik pertanyaan Anda tentang data drive test ini. AI sudah memiliki konteks lengkap dari data Anda.</div>
+      <div class="ai-chatbot-wrap">
+        <!-- Header -->
+        <div class="ai-chat-header">
+          <div class="ai-chat-header-left">
+            <div class="ai-chat-avatar">✦</div>
+            <div>
+              <div class="ai-chat-name">GNet AI Analyst</div>
+              <div class="ai-chat-status">
+                <span class="ai-status-dot"></span>
+                Siap menganalisis data drive test
+              </div>
             </div>
           </div>
+          <span class="ai-model-badge">Groq · Free</span>
+        </div>
 
-          <!-- TYPING INDICATOR -->
-          <div class="ai-typing" id="aiTyping" style="display:none">
-            <div class="ai-typing-avatar">✦</div>
-            <div class="ai-typing-dots"><span></span><span></span><span></span></div>
-          </div>
-
-          <!-- CHAT INPUT -->
-          <div class="ai-chat-input-wrap">
-            <textarea
-              id="aiChatInput"
-              class="ai-chat-input"
-              placeholder="Tanya AI tentang data drive test Anda... (Enter untuk kirim, Shift+Enter untuk baris baru)"
-              rows="1"
-            ></textarea>
-            <button class="ai-send-btn" id="aiSendBtn" onclick="AIAnalyst.sendChat()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
+        <!-- Quick chips -->
+        <div class="ai-quick-bar">
+          <div class="ai-quick-bar-label">Analisis Cepat</div>
+          <div class="ai-quick-chips">
+            <button class="ai-chip" data-prompt="full">📋 Laporan Lengkap</button>
+            <button class="ai-chip" data-prompt="kpi">📈 Evaluasi KPI</button>
+            <button class="ai-chip" data-prompt="coverage">🗺 Analisis Coverage</button>
+            <button class="ai-chip" data-prompt="handover">⇄ Analisis Handover</button>
+            <button class="ai-chip" data-prompt="throughput">🚀 Throughput</button>
+            <button class="ai-chip" data-prompt="recommend">🛠 Rekomendasi</button>
           </div>
         </div>
 
-      </div><!-- /aiPanel -->
-    </section>
+        <!-- Messages -->
+        <div class="ai-messages" id="aiMessages">
+          <div class="ai-welcome">
+            <div class="ai-welcome-icon">✦</div>
+            <div class="ai-welcome-title">Halo! Saya AI Analyst Drive Test</div>
+            <div class="ai-welcome-sub">Pilih analisis cepat di atas atau ketik pertanyaan tentang data RSRP, RSRQ, SNR, throughput, handover, dan parameter LTE/5G lainnya.</div>
+          </div>
+        </div>
 
+        <!-- Typing -->
+        <div class="ai-typing" id="aiTyping" style="display:none">
+          <div class="ai-typing-avatar">✦</div>
+          <div class="ai-typing-dots"><span></span><span></span><span></span></div>
+        </div>
+
+        <!-- Input -->
+        <div class="ai-chat-input-wrap">
+          <textarea
+            id="aiChatInput"
+            class="ai-chat-input"
+            placeholder="Tanya tentang data drive test... (Enter kirim, Shift+Enter baris baru)"
+            rows="1"
+          ></textarea>
+          <button class="ai-send-btn" id="aiSendBtn" onclick="AIAnalyst.sendChat()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </section>
   </div><!-- /dashContent -->
 </main>
 
-<!-- SCROLL TO TOP -->
-<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll to top">↑</button>
-
-<!-- TOAST -->
+<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>

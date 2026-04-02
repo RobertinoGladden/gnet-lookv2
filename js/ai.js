@@ -1,13 +1,15 @@
 /* ═══════════════════════════════════════════════
-   AI.JS — AI Analyst · Groq (FREE)
+   AI.JS — AI Analyst · Groq (Hardcoded Key)
    Model: llama-3.3-70b-versatile
-   GNet Analyzer v3.2
+   GNet Analyzer — Redesign v4.0
 ═══════════════════════════════════════════════ */
 'use strict';
 
 window.AIAnalyst = (() => {
 
-  let apiKey      = '';
+  // ── HARDCODED API KEY — ganti dengan key Groq Anda ──
+  const GROQ_API_KEY = 'MASUKKAN_GROQ_API_KEY_ANDA_DISINI';
+
   let chatHistory = [];
   let isStreaming = false;
   let dataContext = null;
@@ -15,7 +17,7 @@ window.AIAnalyst = (() => {
   const MODEL    = 'llama-3.3-70b-versatile';
   const API_BASE = 'https://api.groq.com/openai/v1/chat/completions';
 
-  // ── PROMPT TEMPLATES ──
+  // ── QUICK PROMPT TEMPLATES ──
   const QUICK_PROMPTS = {
     full: `Buat laporan analisis drive test LTE lengkap dan terstruktur. Sertakan:\n### 1. Ringkasan Eksekutif\n### 2. Evaluasi RSRP\n### 3. Evaluasi RSRQ\n### 4. Evaluasi SNR\n### 5. Analisis Throughput\n### 6. Temuan Kritis\n### 7. Kesimpulan & Rekomendasi\nGunakan Bahasa Indonesia profesional dan teknis. Sebutkan angka spesifik dari data.`,
     kpi: `Evaluasi mendalam KPI drive test LTE ini:\n- Bandingkan RSRP, RSRQ, SNR rata-rata vs standar 3GPP\n- Persentase sampel tiap kategori kualitas\n- Korelasi antar parameter\n- Anomali atau inkonsistensi data\n- Berikan **quality score (1-10)** dengan justifikasi lengkap`,
@@ -105,9 +107,6 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
 
   // ── INIT ──
   function init() {
-    const saved = sessionStorage.getItem('gnet_groq_key');
-    if (saved) { apiKey = saved; showPanel(); }
-
     const inp = document.getElementById('aiChatInput');
     if (inp) {
       inp.addEventListener('input', () => {
@@ -119,84 +118,21 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
       });
     }
 
-    document.querySelectorAll('.ai-quick-btn').forEach(btn => {
+    document.querySelectorAll('.ai-chip').forEach(btn => {
       btn.addEventListener('click', () => {
         if (!isStreaming && QUICK_PROMPTS[btn.dataset.prompt])
           runQuickPrompt(btn.dataset.prompt, btn);
       });
     });
-
-    _updateBrandingLabels();
-  }
-
-  // ── UPDATE BRANDING ──
-  function _updateBrandingLabels() {
-    const badge = document.querySelector('.ai-model-badge');
-    if (badge) {
-      badge.textContent = 'Powered by Groq · Free';
-      badge.style.background = 'rgba(74,222,128,0.12)';
-      badge.style.color = '#4ade80';
-      badge.style.borderColor = 'rgba(74,222,128,0.3)';
-    }
-    const inp = document.getElementById('aiApiKeyInput');
-    if (inp) inp.placeholder = 'gsk_...';
-    const hint = document.querySelector('.ai-key-hint');
-    if (hint) hint.innerHTML = 'Gratis · Daftar & dapatkan key di <a href="https://console.groq.com" target="_blank" style="color:var(--cyan)">console.groq.com</a>';
-    const statusLabel = document.getElementById('aiStatusLabel');
-    if (statusLabel && apiKey) statusLabel.textContent = 'Llama 3.3 70B · Groq · Free';
-  }
-
-  // ── KEY MANAGEMENT ──
-  function saveKey() {
-    const input = document.getElementById('aiApiKeyInput');
-    const key   = (input?.value || '').trim();
-    if (!key.startsWith('gsk_') || key.length < 20) {
-      if (input) {
-        input.style.animation = 'none';
-        input.offsetHeight;
-        input.style.animation = 'shake 0.4s ease';
-        setTimeout(() => input.style.animation = '', 400);
-      }
-      showKeyError('API key tidak valid. Gunakan key dari console.groq.com (format: gsk_...)');
-      return;
-    }
-    apiKey = key;
-    sessionStorage.setItem('gnet_groq_key', key);
-    showPanel();
-    _updateBrandingLabels();
-  }
-
-  function changeKey() {
-    apiKey = '';
-    sessionStorage.removeItem('gnet_groq_key');
-    document.getElementById('aiPanel').style.display   = 'none';
-    document.getElementById('aiApiGate').style.display = 'block';
-    const inp = document.getElementById('aiApiKeyInput');
-    if (inp) { inp.value = ''; inp.focus(); }
-  }
-
-  function showKeyError(msg) {
-    const gate = document.getElementById('aiApiGate');
-    let err = gate?.querySelector('.ai-key-err');
-    if (!err && gate) {
-      err = document.createElement('div');
-      err.className = 'ai-key-err';
-      err.style.cssText = 'color:var(--red);font-family:var(--mono);font-size:11px;margin-top:8px;padding:6px 10px;background:rgba(248,113,113,0.08);border-radius:4px;border:1px solid rgba(248,113,113,0.2)';
-      gate.querySelector('.ai-key-row')?.after(err);
-    }
-    if (err) err.textContent = '✕ ' + msg;
-  }
-
-  function showPanel() {
-    document.getElementById('aiApiGate').style.display = 'none';
-    document.getElementById('aiPanel').style.display   = 'block';
   }
 
   // ── QUICK PROMPT ──
   async function runQuickPrompt(key, btn) {
+    document.querySelectorAll('.ai-chip').forEach(b => b.disabled = true);
     btn.classList.add('loading');
     await sendMessage(QUICK_PROMPTS[key]);
     btn.classList.remove('loading');
+    document.querySelectorAll('.ai-chip').forEach(b => b.disabled = false);
   }
 
   // ── SEND CHAT ──
@@ -208,28 +144,34 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
     await sendMessage(msg);
   }
 
-  // ── CORE SEND → Groq Streaming (OpenAI-compatible) ──
+  // ── CORE SEND → Groq Streaming ──
   async function sendMessage(userMsg) {
-    if (!apiKey || isStreaming) return;
+    if (isStreaming) return;
+
+    const apiKey = GROQ_API_KEY;
+    if (!apiKey || apiKey === 'MASUKKAN_GROQ_API_KEY_ANDA_DISINI') {
+      appendMessage('ai', '⚠ **API Key belum dikonfigurasi.** Buka file `js/ai.js` dan ganti nilai `GROQ_API_KEY` dengan key dari [console.groq.com](https://console.groq.com). Gratis & tidak perlu kartu kredit.');
+      return;
+    }
+
     isStreaming = true;
 
     if (!dataContext) dataContext = buildContext();
     if (!dataContext) {
-      appendMessage('ai', '⚠ Tidak ada data drive test. Upload file TXT dulu.');
+      appendMessage('ai', '⚠ **Tidak ada data drive test.** Upload file `.txt` G-NetTrack Pro terlebih dahulu.');
       isStreaming = false; return;
     }
 
+    // Remove welcome state
     document.getElementById('aiMessages')?.querySelector('.ai-welcome')?.remove();
     appendMessage('user', userMsg);
 
-    // Inject data context only on first message
     const isFirst = chatHistory.length === 0;
     const userContent = isFirst
       ? `Data drive test:\n\n${dataContext}\n\n---\n${userMsg}`
       : userMsg;
 
     chatHistory.push({ role: 'user', content: userContent });
-
     const trimmed = chatHistory.length > 20 ? chatHistory.slice(-20) : chatHistory;
 
     setTyping(true); setSendEnabled(false);
@@ -287,13 +229,13 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
       setTyping(false);
       let msg = `**Error:** ${err.message}`;
       if (err.message.includes('401') || err.message.includes('invalid_api_key'))
-        msg = '**API Key tidak valid.** Pastikan key dari [console.groq.com](https://console.groq.com) dan klik "Ganti Key".';
+        msg = '**API Key tidak valid.** Pastikan key dari [console.groq.com](https://console.groq.com) sudah benar di file `js/ai.js`.';
       else if (err.message.includes('429') || err.message.includes('rate_limit'))
-        msg = '**Rate limit.** Free tier Groq: 30 req/menit, 14.400/hari. Tunggu sebentar lalu coba lagi.';
+        msg = '**Rate limit tercapai.** Free tier Groq: 30 req/menit, 14.400/hari. Tunggu sebentar lalu coba lagi.';
       else if (err.message.includes('503') || err.message.includes('overloaded'))
         msg = '**Server Groq sedang sibuk.** Coba lagi dalam beberapa detik.';
       else if (err.message.includes('Failed to fetch'))
-        msg = '**Koneksi gagal.** Pastikan app dijalankan via GitHub Pages atau `python3 -m http.server 8080`, bukan file://.';
+        msg = '**Koneksi gagal.** Pastikan app dijalankan via server (GitHub Pages / `python3 -m http.server 8080`), bukan file://.';
       appendMessage('ai', msg);
       chatHistory.pop();
     }
@@ -309,7 +251,7 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
     const div  = document.createElement('div');
     div.className = `ai-message${isAi ? '' : ' ai-message-user'}`;
     div.innerHTML = `
-      <div class="ai-msg-avatar ${isAi ? 'ai-msg-avatar-ai' : 'ai-msg-avatar-user'}">${isAi ? '✦' : '👤'}</div>
+      <div class="ai-msg-avatar ${isAi ? 'ai-msg-avatar-ai' : 'ai-msg-avatar-user'}">${isAi ? '✦' : 'U'}</div>
       <div class="ai-msg-bubble ${isAi ? 'ai-msg-bubble-ai' : 'ai-msg-bubble-user'}">${isAi ? md(text) : esc(text)}</div>`;
     msgs.appendChild(div); scrollToBottom();
   }
@@ -325,7 +267,13 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
   function renderStreamBubble(b, t) { b.innerHTML = md(t) + '<span class="ai-cursor"></span>'; }
   function finalizeBubble(b, t)     { b.innerHTML = md(t); }
   function setTyping(s)  { const e = document.getElementById('aiTyping'); if (e) e.style.display = s ? 'flex' : 'none'; }
-  function setSendEnabled(s) { ['aiSendBtn','aiChatInput'].forEach(id => { const e = document.getElementById(id); if (e) e.disabled = !s; }); }
+  function setSendEnabled(s) {
+    const btn = document.getElementById('aiSendBtn');
+    const inp = document.getElementById('aiChatInput');
+    if (btn) btn.disabled = !s;
+    if (inp) inp.disabled = !s;
+    document.querySelectorAll('.ai-chip').forEach(b => b.disabled = !s);
+  }
   function scrollToBottom() { const m = document.getElementById('aiMessages'); if (m) m.scrollTop = m.scrollHeight; }
 
   // ── MARKDOWN RENDERER ──
@@ -338,21 +286,27 @@ SNR: >20 Sangat Baik | 10~20 Baik | 0~10 Cukup | -10~0 Buruk | <-10 Sangat Buruk
     t = t.replace(/^---+$/gm, '<hr>');
     t = t.replace(/((?:^[-*•] .+$\n?)+)/gm, b => '<ul>' + b.trim().split('\n').map(l => `<li>${l.replace(/^[-*•] /, '')}</li>`).join('') + '</ul>');
     t = t.replace(/((?:^\d+\. .+$\n?)+)/gm, b => '<ol>' + b.trim().split('\n').map(l => `<li>${l.replace(/^\d+\. /, '')}</li>`).join('') + '</ol>');
-    t = t.split(/\n\n+/).map(b => { b = b.trim(); if (!b) return ''; if (/^<(h3|ul|ol|pre|hr)/.test(b)) return b; return '<p>' + b.replace(/\n/g, '<br>') + '</p>'; }).join('');
+    t = t.split(/\n\n+/).map(b => {
+      b = b.trim(); if (!b) return '';
+      if (/^<(h3|ul|ol|pre|hr)/.test(b)) return b;
+      return '<p>' + b.replace(/\n/g, '<br>') + '</p>';
+    }).join('');
     t = t.replace(/(-1[01]\d|-\d{2,3}(?:\.\d)?)\s*dBm/g, (m, v) => {
       const n = parseFloat(v);
       return `<span class="${n > -80 ? 'ai-badge-good' : n > -100 ? 'ai-badge-warn' : 'ai-badge-bad'}">${m}</span>`;
     });
     return t;
   }
-  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-  return { init, saveKey, changeKey, sendChat, runQuickPrompt };
+  // ── EXPOSE ──
+  return { init, sendChat, runQuickPrompt };
+
 })();
 
-// shake keyframe
-const ss = document.createElement('style');
-ss.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}';
-document.head.appendChild(ss);
+// shake keyframe (legacy support)
+const _ss = document.createElement('style');
+_ss.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}';
+document.head.appendChild(_ss);
 
 document.addEventListener('DOMContentLoaded', () => setTimeout(() => AIAnalyst.init(), 600));

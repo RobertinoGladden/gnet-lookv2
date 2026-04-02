@@ -2,152 +2,394 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="description" content="GNet Analyzer — Drive Test LTE Analyzer untuk G-NetTrack Pro">
-<title>GNet Analyzer — LTE Drive Test Tool</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GNet Analyzer — LTE Drive Test Analyzer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/upload.css">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f0f10;
+  --bg2: #161618;
+  --bg3: #1c1c1f;
+  --bg4: #222226;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.10);
+  --text: #e8e8ea;
+  --text2: #8b8b93;
+  --text3: #555560;
+  --cyan: #22d3ee;
+  --cyan-dim: rgba(34,211,238,0.10);
+  --green: #4ade80;
+  --mono: 'Geist Mono', monospace;
+  --sans: 'DM Sans', system-ui, sans-serif;
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* NAV */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 0 32px; height: 52px;
+  background: rgba(15,15,16,0.9);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none; color: var(--text);
+}
+.nav-logo-icon { color: var(--cyan); font-size: 15px; }
+.nav-logo-text {
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.nav-logo-accent { color: var(--cyan); }
+.nav-ver {
+  font-family: var(--mono); font-size: 10px; font-weight: 400;
+  color: var(--text3); padding: 2px 7px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 4px;
+}
+
+/* HERO */
+.hero {
+  padding: 140px 32px 80px;
+  text-align: center;
+  max-width: 700px; margin: 0 auto;
+}
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.12em; color: var(--cyan);
+  background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.2);
+  padding: 5px 12px; border-radius: 20px;
+  margin-bottom: 28px;
+}
+.hero-tag-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--cyan); animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.3} }
+.hero-title {
+  font-family: var(--mono); font-size: clamp(40px, 8vw, 72px);
+  font-weight: 700; line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text); margin-bottom: 6px;
+}
+.hero-title span { color: var(--cyan); }
+.hero-sub {
+  font-size: 15px; color: var(--text2); line-height: 1.6;
+  max-width: 480px; margin: 0 auto 40px;
+}
+
+/* FEATURE PILLS */
+.feature-pills {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  justify-content: center; margin-bottom: 48px;
+}
+.pill {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  padding: 5px 12px; border-radius: 20px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text2);
+}
+
+/* UPLOAD ZONE */
+.upload-zone {
+  max-width: 680px; margin: 0 auto;
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 14px; padding: 32px;
+}
+.upload-cols {
+  display: grid; grid-template-columns: 1fr 1px 1fr; gap: 0;
+}
+.upload-divider {
+  background: var(--border); position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.upload-divider::after {
+  content: '+'; font-family: var(--mono); font-size: 11px;
+  color: var(--text3); background: var(--bg2);
+  padding: 4px 6px; border-radius: 4px;
+  position: absolute;
+}
+.upload-col { padding: 0 28px; }
+.upload-col-title {
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  color: var(--text); margin-bottom: 4px;
+}
+.upload-col-sub { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+
+.drop-area {
+  border: 1.5px dashed var(--border2); border-radius: 10px;
+  padding: 28px 20px; text-align: center;
+  cursor: pointer; transition: all 0.2s;
+  background: var(--bg);
+}
+.drop-area:hover { border-color: var(--cyan); background: var(--cyan-dim); }
+.drop-area.drag-over { border-color: var(--cyan); background: rgba(34,211,238,0.08); }
+.drop-icon { font-size: 24px; margin-bottom: 8px; }
+.drop-label { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
+.drop-sub { font-size: 11px; color: var(--text3); }
+.drop-file-tags { display: flex; gap: 6px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+.tag {
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  padding: 2px 7px; border-radius: 4px;
+  background: var(--bg4); border: 1px solid var(--border2);
+  color: var(--text3);
+}
+.upload-file-btn {
+  display: block; width: 100%; margin-top: 10px;
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  padding: 9px; border-radius: 7px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text2); cursor: pointer; transition: 0.15s;
+}
+.upload-file-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.file-list { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+.file-item {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 6px; padding: 7px 10px; font-family: var(--mono); font-size: 11px;
+}
+.file-item-name { flex: 1; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-item-ok { color: var(--green); }
+.file-item-rm { color: var(--text3); cursor: pointer; transition: 0.15s; background: none; border: none; font-size: 13px; }
+.file-item-rm:hover { color: #f87171; }
+
+/* ANALYZE BTN */
+.analyze-wrap { margin-top: 24px; display: flex; align-items: center; gap: 12px; }
+.analyze-btn {
+  flex: 1; font-family: var(--mono); font-size: 13px; font-weight: 600;
+  padding: 12px; border-radius: 9px;
+  background: var(--cyan); border: none; color: var(--bg);
+  cursor: pointer; transition: all 0.15s; letter-spacing: 0.04em;
+}
+.analyze-btn:hover { background: #38e8ff; transform: translateY(-1px); }
+.analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.analyze-note { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+/* FOOTER */
+.footer {
+  padding: 40px 32px; text-align: center;
+  border-top: 1px solid var(--border); margin-top: 80px;
+}
+.footer-text { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+
+/* PROGRESS */
+.progress-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(15,15,16,0.85); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+}
+.progress-overlay.show { display: flex; }
+.progress-ring { width: 36px; height: 36px; border: 2px solid var(--border2); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.progress-text { font-family: var(--mono); font-size: 12px; color: var(--text2); }
+
+@media (max-width: 600px) {
+  .upload-cols { grid-template-columns: 1fr; }
+  .upload-divider { display: none; }
+  .upload-col { padding: 0; margin-top: 20px; }
+  .upload-col:first-child { margin-top: 0; }
+  .hero { padding: 100px 20px 60px; }
+}
+</style>
 </head>
-<body class="upload-page">
+<body>
 
-<!-- ANIMATED BG -->
-<div class="bg-canvas" id="bgCanvas"></div>
-<div class="bg-grid"></div>
+<nav class="nav">
+  <a href="#" class="nav-logo">
+    <span class="nav-logo-icon">◈</span>
+    <span class="nav-logo-text">GNET<span class="nav-logo-accent">ANALYZER</span></span>
+  </a>
+  <span class="nav-ver">v4.0</span>
+</nav>
 
-<!-- HEADER -->
-<header class="site-header">
-  <div class="header-inner">
-    <a href="index.html" class="logo">
-      <span class="logo-icon">◈</span>
-      <span class="logo-text">GNET<span class="logo-accent">ANALYZER</span></span>
-    </a>
-    <div class="header-right">
-      <span class="version-badge">v3.0</span>
-      <a href="https://github.com" target="_blank" class="github-btn" title="GitHub">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-        GitHub
-      </a>
-    </div>
+<div class="hero">
+  <div class="hero-tag">
+    <span class="hero-tag-dot"></span>
+    G-NETTRACK PRO · LTE DRIVE TEST ANALYZER
   </div>
-</header>
-
-<!-- HERO -->
-<main class="upload-main">
-  <div class="hero-content">
-    <div class="hero-eyebrow">
-      <span class="pulse-dot"></span>
-      G-NetTrack Pro · LTE Drive Test Analyzer
-    </div>
-    <h1 class="hero-title">
-      <span class="line-1">GNET</span>
-      <span class="line-2">ANALYZER</span>
-    </h1>
-    <p class="hero-desc">
-      Import file <code>.txt</code> G-NetTrack Pro & <code>.kml</code> Events. Dapatkan grafik, peta interaktif, distribusi parameter, dan analisis handover secara otomatis.
-    </p>
-
-    <!-- FEATURE PILLS -->
-    <div class="feature-pills">
-      <span class="pill pill-cyan">📡 RSRP / RSRQ / SNR</span>
-      <span class="pill pill-amber">🗺 Peta Interaktif</span>
-      <span class="pill pill-purple">⇄ Handover Events</span>
-      <span class="pill pill-green">📊 Distribusi</span>
-      <span class="pill pill-red">⚠ Titik Rawan</span>
-      <span class="pill pill-cyan">⬇ Export PNG</span>
-    </div>
+  <div class="hero-title">GNET<br><span>ANALYZER</span></div>
+  <p class="hero-sub">
+    Import file .txt G-NetTrack Pro. Dapatkan grafik, peta interaktif, distribusi parameter, analisis handover, dan AI Analyst berbasis Groq secara otomatis.
+  </p>
+  <div class="feature-pills">
+    <span class="pill">RSRP / RSRQ / SNR</span>
+    <span class="pill">Peta Interaktif</span>
+    <span class="pill">Handover Events</span>
+    <span class="pill">Distribusi</span>
+    <span class="pill">Titik Rawan</span>
+    <span class="pill">✦ AI Analyst</span>
   </div>
 
-  <!-- UPLOAD CARD -->
-  <div class="upload-card">
-    <div class="upload-card-inner">
-
-      <!-- TXT DROP ZONE -->
-      <div class="drop-zone" id="txtDrop" data-active="false">
-        <input type="file" id="txtInput" accept=".txt,.csv" multiple>
-        <div class="drop-icon">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+  <div class="upload-zone">
+    <div class="upload-cols">
+      <!-- TXT -->
+      <div class="upload-col">
+        <div class="upload-col-title">Drop file G-NetTrack Pro</div>
+        <div class="upload-col-sub">Format: .txt export · Bisa multi-file</div>
+        <div class="drop-area" id="txtDrop" onclick="document.getElementById('txtInput').click()">
+          <div class="drop-icon">⬆</div>
+          <div class="drop-label">Drop file di sini</div>
+          <div class="drop-sub">atau klik untuk pilih</div>
+          <div class="drop-file-tags">
+            <span class="tag">.TXT</span>
+            <span class="tag">MULTI FILE</span>
+          </div>
         </div>
-        <h3 class="drop-title">Drop file G-NetTrack Pro</h3>
-        <p class="drop-sub">Format: <code>.txt</code> export dari G-NetTrack Pro · Bisa multi-file</p>
-        <button class="drop-btn" onclick="document.getElementById('txtInput').click()">
-          Pilih File .TXT
-        </button>
-        <div class="drop-formats">
-          <span class="fmt">G-NETTRACK .TXT</span>
-          <span class="fmt">MULTI FILE</span>
-          <span class="fmt">AUTO PARSE</span>
-        </div>
+        <input type="file" id="txtInput" accept=".txt" multiple style="display:none" onchange="handleTxtFiles(this.files)">
+        <div class="file-list" id="txtList"></div>
       </div>
 
-      <div class="upload-divider">
-        <span>+</span>
-      </div>
+      <div class="upload-divider"></div>
 
-      <!-- KML DROP ZONE -->
-      <div class="drop-zone drop-zone-kml" id="kmlDrop" data-active="false">
-        <input type="file" id="kmlInput" accept=".kml">
-        <div class="drop-icon drop-icon-amber">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <!-- KML -->
+      <div class="upload-col">
+        <div class="upload-col-title">Events KML <span style="font-weight:300;color:var(--text3)">(opsional)</span></div>
+        <div class="upload-col-sub">File .kml events G-NetTrack Pro</div>
+        <div class="drop-area" id="kmlDrop" onclick="document.getElementById('kmlInput').click()">
+          <div class="drop-icon">📍</div>
+          <div class="drop-label">Drop file .KML</div>
+          <div class="drop-sub">atau klik untuk pilih</div>
+          <div class="drop-file-tags">
+            <span class="tag">.KML</span>
+          </div>
         </div>
-        <h3 class="drop-title drop-title-sm">Events KML <span class="optional-tag">opsional</span></h3>
-        <p class="drop-sub">File <code>.kml</code> events G-NetTrack Pro</p>
-        <button class="drop-btn drop-btn-amber" onclick="document.getElementById('kmlInput').click()">
-          Pilih File .KML
-        </button>
+        <input type="file" id="kmlInput" accept=".kml" style="display:none" onchange="handleKmlFile(this.files[0])">
+        <div class="file-list" id="kmlList"></div>
       </div>
-
     </div>
 
-    <!-- STATUS -->
-    <div id="statusContainer" class="status-container" style="display:none">
-      <div id="statusTxt" class="status-item"></div>
-      <div id="statusKml" class="status-item status-item-amber" style="display:none"></div>
-    </div>
-
-    <!-- ANALYZE BUTTON -->
-    <div id="analyzeWrap" style="display:none">
-      <button class="analyze-btn" id="analyzeBtn" onclick="startAnalysis()">
-        <span class="analyze-btn-text">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Mulai Analisis
-        </span>
-        <span class="analyze-btn-arrow">→</span>
+    <div class="analyze-wrap">
+      <button class="analyze-btn" id="analyzeBtn" onclick="startAnalyze()" disabled>
+        ANALISIS →
       </button>
+      <div class="analyze-note" id="analyzeNote">Pilih file .txt dulu</div>
     </div>
   </div>
+</div>
 
-  <!-- HOW TO USE -->
-  <div class="howto">
-    <div class="howto-title">Cara Pakai</div>
-    <div class="howto-steps">
-      <div class="step">
-        <div class="step-num">01</div>
-        <div class="step-text">Buka G-NetTrack Pro → Menu <strong>Session</strong> → Export <strong>.TXT</strong></div>
-      </div>
-      <div class="step">
-        <div class="step-num">02</div>
-        <div class="step-text">(Opsional) Export <strong>Events KML</strong> dari menu yang sama</div>
-      </div>
-      <div class="step">
-        <div class="step-num">03</div>
-        <div class="step-text">Drop kedua file ke sini, klik <strong>Mulai Analisis</strong></div>
-      </div>
-      <div class="step">
-        <div class="step-num">04</div>
-        <div class="step-text">Grafik, peta, distribusi & tabel rawan otomatis ter-generate</div>
-      </div>
-    </div>
-  </div>
-
-</main>
-
-<footer class="site-footer">
-  <div>// GNET ANALYZER &nbsp;·&nbsp; Drive Test LTE Tool &nbsp;·&nbsp; G-NetTrack Pro Compatible &nbsp;·&nbsp; v3.0</div>
+<footer class="footer">
+  <div class="footer-text">GNet Analyzer v4.0 · G-NetTrack Pro Drive Test Tool · Powered by Groq AI</div>
 </footer>
 
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-ring"></div>
+  <div class="progress-text" id="progressText">Memproses data...</div>
+</div>
+
 <script src="js/parser.js"></script>
-<script src="js/upload.js"></script>
+<script>
+let txtFiles = [];
+let kmlFile  = null;
+
+// ── DRAG & DROP ──
+['txtDrop','kmlDrop'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+  el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+  el.addEventListener('drop', e => {
+    e.preventDefault(); el.classList.remove('drag-over');
+    const files = [...e.dataTransfer.files];
+    if (id === 'txtDrop') handleTxtFiles(files.filter(f => f.name.endsWith('.txt')));
+    else { const k = files.find(f => f.name.endsWith('.kml')); if (k) handleKmlFile(k); }
+  });
+});
+
+function handleTxtFiles(files) {
+  [...files].forEach(f => {
+    if (!txtFiles.find(x => x.name === f.name)) txtFiles.push(f);
+  });
+  renderTxtList();
+  updateBtn();
+}
+
+function handleKmlFile(f) {
+  kmlFile = f;
+  renderKmlList();
+}
+
+function renderTxtList() {
+  const el = document.getElementById('txtList');
+  el.innerHTML = txtFiles.map((f,i) => `
+    <div class="file-item">
+      <span class="file-item-ok">✓</span>
+      <span class="file-item-name">${f.name}</span>
+      <button class="file-item-rm" onclick="removeTxt(${i})">✕</button>
+    </div>`).join('');
+}
+
+function renderKmlList() {
+  const el = document.getElementById('kmlList');
+  el.innerHTML = kmlFile ? `
+    <div class="file-item">
+      <span class="file-item-ok">✓</span>
+      <span class="file-item-name">${kmlFile.name}</span>
+      <button class="file-item-rm" onclick="removeKml()">✕</button>
+    </div>` : '';
+}
+
+function removeTxt(i) { txtFiles.splice(i,1); renderTxtList(); updateBtn(); }
+function removeKml() { kmlFile = null; renderKmlList(); }
+
+function updateBtn() {
+  const btn  = document.getElementById('analyzeBtn');
+  const note = document.getElementById('analyzeNote');
+  btn.disabled = txtFiles.length === 0;
+  note.textContent = txtFiles.length ? `${txtFiles.length} file siap` : 'Pilih file .txt dulu';
+}
+
+async function startAnalyze() {
+  const overlay = document.getElementById('progressOverlay');
+  const ptxt    = document.getElementById('progressText');
+  overlay.classList.add('show');
+  ptxt.textContent = 'Membaca file...';
+
+  try {
+    const contents = await Promise.all(txtFiles.map(f => f.text()));
+    ptxt.textContent = 'Parsing data...';
+
+    const parsed = typeof GNetParser !== 'undefined'
+      ? GNetParser.parseMultiple(contents, txtFiles.map(f=>f.name))
+      : null;
+
+    if (!parsed || !parsed.data?.length) {
+      throw new Error('Tidak ada data valid dalam file. Pastikan format G-NetTrack Pro.');
+    }
+
+    ptxt.textContent = 'Menyimpan data...';
+    sessionStorage.setItem('gnet_data',   JSON.stringify(parsed.data));
+    sessionStorage.setItem('gnet_meta',   JSON.stringify(parsed.meta));
+    sessionStorage.setItem('gnet_files',  JSON.stringify(txtFiles.map(f=>f.name)));
+
+    if (kmlFile) {
+      ptxt.textContent = 'Memproses KML...';
+      const kmlText = await kmlFile.text();
+      const events = typeof GNetParser !== 'undefined' && GNetParser.parseKML
+        ? GNetParser.parseKML(kmlText)
+        : [];
+      sessionStorage.setItem('gnet_events', JSON.stringify(events));
+    } else {
+      sessionStorage.removeItem('gnet_events');
+    }
+
+    ptxt.textContent = 'Membuka dashboard...';
+    window.location.href = 'dashboard.html';
+  } catch (err) {
+    overlay.classList.remove('show');
+    alert('Error: ' + err.message);
+  }
+}
+</script>
 </body>
 </html>
