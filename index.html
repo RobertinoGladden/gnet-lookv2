@@ -107,9 +107,11 @@ body {
   max-width: 680px; margin: 0 auto;
   background: var(--bg2); border: 1px solid var(--border2);
   border-radius: 14px; padding: 32px;
+  overflow: hidden;
 }
 .upload-cols {
   display: grid; grid-template-columns: 1fr 1px 1fr; gap: 0;
+  overflow: hidden;
 }
 .upload-divider {
   background: var(--border); position: relative;
@@ -121,7 +123,12 @@ body {
   padding: 4px 6px; border-radius: 4px;
   position: absolute;
 }
-.upload-col { padding: 0 28px; }
+.upload-col {
+  padding: 0 28px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
 .upload-col-title {
   font-family: var(--mono); font-size: 12px; font-weight: 600;
   color: var(--text); margin-bottom: 4px;
@@ -133,6 +140,7 @@ body {
   padding: 28px 20px; text-align: center;
   cursor: pointer; transition: all 0.2s;
   background: var(--bg);
+  max-width: 100%;
 }
 .drop-area:hover { border-color: var(--cyan); background: var(--cyan-dim); }
 .drop-area.drag-over { border-color: var(--cyan); background: rgba(34,211,238,0.08); }
@@ -154,13 +162,36 @@ body {
   color: var(--text2); cursor: pointer; transition: 0.15s;
 }
 .upload-file-btn:hover { border-color: var(--cyan); color: var(--cyan); }
-.file-list { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
-.file-item {
-  display: flex; align-items: center; gap: 8px;
-  background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 6px; padding: 7px 10px; font-family: var(--mono); font-size: 11px;
+.file-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 100%;
+  width: 100%;
 }
-.file-item-name { flex: 1; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  min-width: 0;
+  width: 100%;
+}
+.file-item-name {
+  flex: 1;
+  color: var(--text2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
 .file-item-ok { color: var(--green); }
 .file-item-rm { color: var(--text3); cursor: pointer; transition: 0.15s; background: none; border: none; font-size: 13px; }
 .file-item-rm:hover { color: #f87171; }
