@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
    UPLOAD.JS — Upload page interactions
-   Cakra v1.1.0
+   Cakra v1.1.1
 ═══════════════════════════════════════════════ */
 
 'use strict';
@@ -31,8 +31,25 @@ function setupDropZone(zoneId, inputId, onFiles, opts = {}) {
 
 // ── HANDLE TXT FILES ──
 function handleTxtFiles(files) {
-  const valid = files.filter(f => f.name.toLowerCase().endsWith('.txt') || f.name.toLowerCase().endsWith('.csv'));
-  if (!valid.length) { showTxtStatus('Format tidak dikenal. Gunakan file .txt dari G-NetTrack Pro.', 'err'); return; }
+  // Reject G-NetTrack auxiliary files — they have different column schemas
+  // and would corrupt the dataset if concatenated with the main log.
+  // Auxiliary files: _cellinfo.txt, _datatest.txt, _datateststate.txt, _events.txt
+  const auxPattern = /_(cellinfo|datatest|datateststate|events)\.(txt|csv)$/i;
+  const aux = files.filter(f => auxPattern.test(f.name));
+  if (aux.length) {
+    const names = aux.map(f => f.name).join(', ');
+    showTxtStatus(`File aux G-NetTrack di-skip: ${names}. Upload hanya master .txt-nya.`, 'warn');
+  }
+  const valid = files.filter(f =>
+    (f.name.toLowerCase().endsWith('.txt') || f.name.toLowerCase().endsWith('.csv'))
+    && !auxPattern.test(f.name)
+  );
+  if (!valid.length) {
+    showTxtStatus(aux.length
+      ? 'Semua file yang di-upload adalah file aux. Upload master .txt G-NetTrack (yang tanpa suffix _cellinfo/_datatest/_events).'
+      : 'Format tidak dikenal. Gunakan file .txt dari G-NetTrack Pro.', 'err');
+    return;
+  }
 
   showTxtStatus('Memuat file...', 'loading');
   let allRows = [], pending = valid.length, names = [];

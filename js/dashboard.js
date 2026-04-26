@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
    DASHBOARD.JS — Dashboard controller
-   Cakra v1.1.0 — Dashboard
+   Cakra v1.1.1 — Dashboard
 ═══════════════════════════════════════════════ */
 
 'use strict';
@@ -37,6 +37,17 @@ async function loadData() {
       return;
     }
     DATA = JSON.parse(raw);
+    // Defensive sanity filter — catch contaminated rows that may persist in sessionStorage
+    // from older parser versions or session residue. Same physical ranges as parser.js.
+    const _beforeLen = DATA.length;
+    DATA = DATA.filter(d =>
+      typeof d.rsrp === 'number' && d.rsrp >= -160 && d.rsrp <= -30 &&
+      typeof d.rsrq === 'number' && d.rsrq >= -45  && d.rsrq <= 25  &&
+      typeof d.snr  === 'number' && d.snr  >= -25  && d.snr  <= 50
+    );
+    if (DATA.length < _beforeLen) {
+      console.warn(`[Cakra dashboard] Filtered ${_beforeLen - DATA.length} contaminated row(s) from sessionStorage`);
+    }
     if (!DATA.length) {
       await new Promise(r => setTimeout(r, 1800));
       window.location.replace('index.html');
@@ -221,9 +232,11 @@ function cards(items) {
 // 03 KPI
 // ═══════════════════════════════════════════════
 function buildKPI() {
-  const avg = k => (DATA.reduce((s,d) => s+d[k], 0) / DATA.length).toFixed(1);
-  const min = k => Math.min(...DATA.map(d => d[k])).toFixed(1);
-  const max = k => Math.max(...DATA.map(d => d[k])).toFixed(1);
+  // Filter null/NaN before reductions so a single bad value can't poison stats
+  const _vals = k => DATA.map(d => d[k]).filter(v => v !== null && v !== undefined && !isNaN(v));
+  const avg = k => { const v = _vals(k); return v.length ? (v.reduce((s,x)=>s+x, 0) / v.length).toFixed(1) : '0'; };
+  const min = k => { const v = _vals(k); return v.length ? Math.min(...v).toFixed(1) : '—'; };
+  const max = k => { const v = _vals(k); return v.length ? Math.max(...v).toFixed(1) : '—'; };
 
   const setKpi = (id, val, badgeId, good, warn, labels) => {
     const el  = document.getElementById(id);

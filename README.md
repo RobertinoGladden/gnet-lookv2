@@ -1,8 +1,8 @@
-# CAKRA v1.1.0
+# CAKRA v1.1.1
 
 **Drive Test Intelligence** untuk RF Engineer — Analisis LTE & 5G NR dari G-NetTrack Pro, TEMS, NEMO, SIGMON. Web app statis + PWA yang berjalan langsung di browser.
 
-![GNet Analyzer](https://img.shields.io/badge/version-1.1.0-38bdf8?style=flat-square) ![Static](https://img.shields.io/badge/type-static%20HTML-4ade80?style=flat-square) ![AI](https://img.shields.io/badge/AI-Groq%20LLM-a78bfa?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-c084fc?style=flat-square)
+![GNet Analyzer](https://img.shields.io/badge/version-1.1.1-38bdf8?style=flat-square) ![Static](https://img.shields.io/badge/type-static%20HTML-4ade80?style=flat-square) ![AI](https://img.shields.io/badge/AI-Groq%20LLM-a78bfa?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-c084fc?style=flat-square)
 
 ---
 
@@ -157,7 +157,7 @@ MIT License — bebas digunakan dan dimodifikasi.
 
 **Drive Test Intelligence** untuk RF Engineer — Analisis LTE & 5G NR dari G-NetTrack Pro, TEMS, NEMO, SIGMON. Web app statis + PWA yang berjalan langsung di browser.
 
-![GNet Analyzer](https://img.shields.io/badge/version-1.1.0-38bdf8?style=flat-square) ![Static](https://img.shields.io/badge/type-static%20HTML-4ade80?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-c084fc?style=flat-square)
+![GNet Analyzer](https://img.shields.io/badge/version-1.1.1-38bdf8?style=flat-square) ![Static](https://img.shields.io/badge/type-static%20HTML-4ade80?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-c084fc?style=flat-square)
 
 ---
 

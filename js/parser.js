@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
    PARSER.JS — Multi-tool Drive Test Parser
-   Cakra v1.1.0
+   Cakra v1.1.1
    Supports: G-NetTrack Pro, TEMS Investigation,
              NEMO Outdoor, NEMO Handy, SIGMON
 ═══════════════════════════════════════════════ */
@@ -9,7 +9,33 @@
 window.GNetParser = (() => {
 
   // ── LTE column map: G-NetTrack Pro ──
+  // NOTE: Indices below are LEGACY DEFAULTS for older G-NetTrack exports.
+  // For BAND/BW/CQI/State, parseGNet now uses HEADER-based lookup via _resolveCol()
+  // because G-NetTrack export schema evolved (newer versions add columns shifting indices).
   const C = { ts:0,lon:1,lat:2,speed:3,operator:4,mcc:5,cgi:6,cellname:7,node:8,cellid:9,lac:10,tech:11,mode:12,level:13,qual:14,snr:15,cqi:16,lte_rssi:17,arfcn:18,dl:19,ul:20,altitude:22,height:23,accuracy:24,state:27,ping_avg:28,ping_min:29,ping_max:30,dl_test:32,ul_test:33,device:53,band:54,bw:55 };
+
+  // ── Physical sanity ranges (3GPP TS 36.133 / 38.215 + safety margin) ──
+  // Used to reject contaminated rows from session residue, multi-file double-upload,
+  // or column misalignment that would otherwise produce impossible values like RSRP=244 dBm.
+  const _RSRP_MIN = -160, _RSRP_MAX = -30;  // LTE: -140..-44 / NR: -156..-31, padded
+  const _RSRQ_MIN = -45,  _RSRQ_MAX = 25;   // LTE: -19.5..-3 / NR Rel-15: -43..20, padded
+  const _SNR_MIN  = -25,  _SNR_MAX  = 50;   // SS-SINR: -23..40, SINR LTE: -20..30+, padded
+  function _validRanges(rsrp, rsrq, snr) {
+    return rsrp >= _RSRP_MIN && rsrp <= _RSRP_MAX
+        && rsrq >= _RSRQ_MIN && rsrq <= _RSRQ_MAX
+        && snr  >= _SNR_MIN  && snr  <= _SNR_MAX;
+  }
+
+  // Header-name lookup with case-insensitive variant matching.
+  // Returns the first matching column index, or fallback if none found.
+  function _resolveCol(headers, candidates, fallback) {
+    const upper = headers.map(h => (h||'').trim().toUpperCase());
+    for (const cand of candidates) {
+      const idx = upper.indexOf(cand.toUpperCase());
+      if (idx >= 0) return idx;
+    }
+    return fallback;
+  }
 
   // ── NR column auto-detection keywords ──
   const NR_KEYS = {
@@ -73,7 +99,14 @@ window.GNetParser = (() => {
     const NRC = resolveNrCols(headers);
     const iLtePci = resolveLtePci(headers);
     const hasNrCols = Object.keys(NRC).length > 0;
+    // Resolve evolving G-NetTrack columns by header name (fallback to legacy index).
+    // Newer G-NetTrack exports (v8+) added columns that shift BAND/BW/CQI/State.
+    const iBand  = _resolveCol(headers, ['BAND','LTE BAND','NR BAND'],         C.band);
+    const iBw    = _resolveCol(headers, ['BANDWIDTH','BW','LTE BW','NR BW'],   C.bw);
+    const iCqi   = _resolveCol(headers, ['CQI','LTE CQI'],                     C.cqi);
+    const iState = _resolveCol(headers, ['STATE','PHONESTATE','PHONE STATE'],  C.state);
     const rows = [];
+    let _rejectedRange = 0;
 
     for (let i = 1; i < lines.length; i++) {
       const p = lines[i].split('\t');
@@ -82,6 +115,8 @@ window.GNetParser = (() => {
       const rsrq = parseFloat(p[C.qual]);
       const snr  = parseFloat(p[C.snr]);
       if (isNaN(rsrp) || isNaN(rsrq) || isNaN(snr)) continue;
+      // Reject rows with physically impossible values (e.g. column misalignment, garbage data)
+      if (!_validRanges(rsrp, rsrq, snr)) { _rejectedRange++; continue; }
       const lat = parseFloat(p[C.lat]), lon = parseFloat(p[C.lon]);
       const tsRaw = p[C.ts]||'';
       const tsDisp = tsRaw.replace('_',' ').replace(/\./g,':');
@@ -100,9 +135,9 @@ window.GNetParser = (() => {
         tech:(p[C.tech]||'').trim(), arfcn:(p[C.arfcn]||'').trim(),
         pci: isNaN(ltePciVal) ? null : ltePciVal,
         dl:parseFloat(p[C.dl])||0, ul:parseFloat(p[C.ul])||0,
-        band:(p[C.band]||'').trim(), bw:(p[C.bw]||'').trim(),
-        device:(p[C.device]||'').trim(), state:(p[C.state]||'').trim(),
-        cqi:p[C.cqi]||'', ping_avg:parseFloat(p[C.ping_avg])||null,
+        band:(p[iBand]||'').trim(), bw:(p[iBw]||'').trim(),
+        device:(p[C.device]||'').trim(), state:(p[iState]||'').trim(),
+        cqi:p[iCqi]||'', ping_avg:parseFloat(p[C.ping_avg])||null,
         nr_rsrp: isNaN(nrGet('nr_rsrp'))?null:nrGet('nr_rsrp'),
         nr_rsrq: isNaN(nrGet('nr_rsrq'))?null:nrGet('nr_rsrq'),
         nr_sinr: isNaN(nrGet('nr_sinr'))?null:nrGet('nr_sinr'),
@@ -112,6 +147,9 @@ window.GNetParser = (() => {
         nr_ul: isNaN(nrGet('nr_ul'))?null:nrGet('nr_ul'),
         _hasNrCols: hasNrCols,
       });
+    }
+    if (_rejectedRange > 0) {
+      console.warn(`[Cakra parser] Rejected ${_rejectedRange} row(s) with out-of-range RSRP/RSRQ/SNR (likely contamination)`);
     }
     return rows;
   }
@@ -150,6 +188,10 @@ window.GNetParser = (() => {
       const rsrq = iRsrq >= 0 ? parseFloat(p[iRsrq]) : NaN;
       const snr  = iSinr >= 0 ? parseFloat(p[iSinr]) : NaN;
       if (isNaN(rsrp)) continue;
+      // Sanity: physically impossible values from contamination/misalignment
+      if (rsrp < -160 || rsrp > -30) continue;
+      if (!isNaN(rsrq) && (rsrq < -45 || rsrq > 25)) continue;
+      if (!isNaN(snr)  && (snr  < -25 || snr  > 50)) continue;
       const lat  = iLat >= 0 ? parseFloat(p[iLat]) : null;
       const lon  = iLon >= 0 ? parseFloat(p[iLon]) : null;
       const ts   = iTime >= 0 ? (p[iTime]||'').trim() : '';
@@ -207,6 +249,10 @@ window.GNetParser = (() => {
       if (p.length < 4) continue;
       const rsrp = iRsrp>=0?parseFloat(p[iRsrp]):NaN;
       if (isNaN(rsrp)) continue;
+      // Sanity: physically impossible values from contamination/misalignment
+      if (rsrp < -160 || rsrp > -30) continue;
+      if (!isNaN(rsrq) && (rsrq < -45 || rsrq > 25)) continue;
+      if (!isNaN(snr)  && (snr  < -25 || snr  > 50)) continue;
       const rsrq=iRsrq>=0?parseFloat(p[iRsrq]):0, snr=iSinr>=0?parseFloat(p[iSinr]):0;
       const lat=iLat>=0?parseFloat(p[iLat]):null, lon=iLon>=0?parseFloat(p[iLon]):null;
       const ts=iTime>=0?(p[iTime]||'').trim():'';
@@ -258,6 +304,10 @@ window.GNetParser = (() => {
       const p = lines[i].split(sep).map(v => v.trim().replace(/"/g,''));
       const rsrp = iRsrp>=0?parseFloat(p[iRsrp]):NaN;
       if (isNaN(rsrp)) continue;
+      // Sanity: physically impossible values from contamination/misalignment
+      if (rsrp < -160 || rsrp > -30) continue;
+      if (!isNaN(rsrq) && (rsrq < -45 || rsrq > 25)) continue;
+      if (!isNaN(snr)  && (snr  < -25 || snr  > 50)) continue;
       const rsrq=iRsrq>=0?parseFloat(p[iRsrq]):0, snr=iSinr>=0?parseFloat(p[iSinr]):0;
       const lat=iLat>=0?parseFloat(p[iLat]):null, lon=iLon>=0?parseFloat(p[iLon]):null;
       const ts=iTime>=0?(p[iTime]||'').trim():'';

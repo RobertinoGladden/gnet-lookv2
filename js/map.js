@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
    MAP.JS — Leaflet map: signal layers + events
-   Cakra v1.1.0 — with 5G NR layer + theme support
+   Cakra v1.1.1 — with 5G NR layer + theme support
 ═══════════════════════════════════════════════ */
 
 'use strict';

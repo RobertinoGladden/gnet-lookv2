@@ -272,6 +272,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <h2>Riwayat Versi</h2>
     <div class="version-list">
       <div class="version-item">
+        <div class="version-tag">v1.1.1</div>
+        <div class="version-body">
+          <h4>Bug Fix — Parser Hardening &amp; PDF Report Accuracy</h4>
+          <p>Fix bug yang ditemukan saat validasi terhadap drive test riil: (1) Sanity validation di parser — reject baris dengan nilai RSRP/RSRQ/SNR di luar rentang fisik 3GPP (mencegah ghost row dengan nilai impossible seperti RSRP=244 dBm yang muncul akibat residue session atau column misalignment). (2) Header-based lookup untuk kolom BAND/BW/CQI/State di parser G-NetTrack — fix issue di mana parser pakai index tetap (54, 55, dst) padahal G-NetTrack export schema berevolusi dan menambah kolom, menyebabkan PDF report nampilin "Band 110200873" yang sebenarnya nilai RAWCELLID. (3) <span class="inline-code">buildMeta</span> di PDF export di-fix supaya pakai timestamp first/last yang benar-benar paling awal/akhir secara kronologis. (4) <span class="inline-code">min/max</span> di dashboard &amp; PDF export sekarang filter null/NaN untuk mencegah satu baris jelek mempengaruhi statistik agregat. (5) Defensive sanity filter saat load DATA dari sessionStorage untuk menangkap data tercemar dari versi parser lama.</p>
+        </div>
+      </div>
+      <div class="version-item">
         <div class="version-tag">v1.1.0</div>
         <div class="version-body">
           <h4>Audit Fix &amp; Map UX Refactor</h4>
@@ -301,7 +308,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 </div>
 
 <footer class="footer">
-  <div class="footer-text">CAKRA v1.1.0 — Drive Test Intelligence · © 2025 · Hak Cipta Dilindungi</div>
+  <div class="footer-text">CAKRA v1.1.1 — Drive Test Intelligence · © 2025 · Hak Cipta Dilindungi</div>
   <div class="footer-links">
     <a href="docs.html" class="footer-link">Panduan Penggunaan</a>
     <a href="about.html" class="footer-link">Tentang Cakra</a>

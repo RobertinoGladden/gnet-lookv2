@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
    EXPORT.JS — PDF & Excel export
-   Cakra v1.1.0
+   Cakra v1.1.1
    PDF: browser print API (no dependency)
    Excel: CSV-based (universal, no lib needed)
 ═══════════════════════════════════════════════ */
@@ -543,16 +543,22 @@ ${rawan.length ? `<div class="section">
   // HELPERS
   // ══════════════════════════════════════════
   function buildMeta(D, E) {
-    const f = D[0], l = D[D.length-1];
+    // Use chronologically first/last by timestamp (string sorts same as date for "YYYY.MM.DD_HH.MM.SS" format).
+    // Don't rely on D[0]/D[D.length-1] — array may be out of order from multi-file concat or after thinning.
+    const sortedTs = D.map(d => d.ts).filter(Boolean).sort();
+    const firstTs = sortedTs[0] || (D[0] && D[0].ts) || '';
+    const lastTs  = sortedTs[sortedTs.length - 1] || (D[D.length-1] && D[D.length-1].ts) || '';
+    const f = D.find(d => d.ts === firstTs) || D[0];
+    const l = D.find(d => d.ts === lastTs) || D[D.length-1];
     const gps = D.filter(d=>d.lat&&d.lon);
     const speeds = D.map(d=>d.speed*3.6);
     const cells = {};
     D.forEach(d => { if(d.cellname) cells[d.cellname]=(cells[d.cellname]||0)+1; });
     return {
-      date: f.ts?.substring(0,10).replace(/\./g,'-') || '—',
-      timeStart: f.timePart || '—',
-      timeEnd:   l.timePart || '—',
-      duration:  GNetParser.calcDuration(f.ts, l.ts),
+      date: firstTs.substring(0,10).replace(/\./g,'-') || '—',
+      timeStart: f.timePart || firstTs.split('_')[1]?.replace(/\./g,':') || '—',
+      timeEnd:   l.timePart || lastTs.split('_')[1]?.replace(/\./g,':') || '—',
+      duration:  GNetParser.calcDuration(firstTs, lastTs),
       gpsCount:  gps.length,
       avgSpeed:  (speeds.reduce((a,b)=>a+b,0)/speeds.length).toFixed(1),
       maxSpeed:  Math.max(...speeds).toFixed(1),
@@ -567,9 +573,11 @@ ${rawan.length ? `<div class="section">
   }
 
   function buildKPIData(D) {
-    const avg = k => parseFloat((D.reduce((s,d)=>s+d[k],0)/D.length).toFixed(1));
-    const mn  = k => parseFloat(Math.min(...D.map(d=>d[k])).toFixed(1));
-    const mx  = k => parseFloat(Math.max(...D.map(d=>d[k])).toFixed(1));
+    // Defensive: filter null/NaN before min/max so a single bad row doesn't poison stats
+    const _vals = k => D.map(d => d[k]).filter(v => v !== null && v !== undefined && !isNaN(v));
+    const avg = k => { const v = _vals(k); return v.length ? parseFloat((v.reduce((s,x)=>s+x,0)/v.length).toFixed(1)) : 0; };
+    const mn  = k => { const v = _vals(k); return v.length ? parseFloat(Math.min(...v).toFixed(1)) : 0; };
+    const mx  = k => { const v = _vals(k); return v.length ? parseFloat(Math.max(...v).toFixed(1)) : 0; };
     const dlA = D.map(d=>d.dl).filter(x=>x>0);
     const ulA = D.map(d=>d.ul).filter(x=>x>0);
     return {
