@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
    EXPORT.JS — PDF & Excel export
-   Cakra v1.0
+   Cakra v1.1.0
    PDF: browser print API (no dependency)
    Excel: CSV-based (universal, no lib needed)
 ═══════════════════════════════════════════════ */

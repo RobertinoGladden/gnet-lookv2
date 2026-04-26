@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
    PARSER.JS — Multi-tool Drive Test Parser
-   Cakra v1.0
+   Cakra v1.1.0
    Supports: G-NetTrack Pro, TEMS Investigation,
              NEMO Outdoor, NEMO Handy, SIGMON
 ═══════════════════════════════════════════════ */

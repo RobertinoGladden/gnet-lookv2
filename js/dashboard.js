@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
    DASHBOARD.JS — Dashboard controller
-   Cakra v1.0.0 — Dashboard
+   Cakra v1.1.0 — Dashboard
 ═══════════════════════════════════════════════ */
 
 'use strict';

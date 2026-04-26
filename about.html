@@ -272,6 +272,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <h2>Riwayat Versi</h2>
     <div class="version-list">
       <div class="version-item">
+        <div class="version-tag">v1.1.0</div>
+        <div class="version-body">
+          <h4>Audit Fix &amp; Map UX Refactor</h4>
+          <p>Toolbar peta direfactor jadi sistem ring overlay non-eksklusif — Gap, Cell Churn, dan Throughput sekarang bisa nyala bareng di atas signal layer (RSRP/RSRQ/SNR) tanpa nge-replace. Throughput overlay 3-tier (high hijau, mid kuning, low merah) sesuai docs. Fitur "Pilot Pollution" di-rename jadi "Cell Churn / Handover Instability" — koreksi terminologi setelah audit terhadap definisi industri (pilot pollution klasik butuh neighbor measurement scanner data). Panel baru: PCI Mod-3 Conflict Analysis untuk identifikasi potensi PSS collision antar cell. Sample thinning di-upgrade dari index-based ke distance-based (Haversine) — eliminasi bias spatial. Dokumentasi diperbaiki: klaim 3GPP yang over-claimed di-soften jadi konvensi operator industri (selaras 3GPP), klarifikasi RLF threshold, dan disclaimer scope tool terhadap framework Kominfo.</p>
+        </div>
+      </div>
+      <div class="version-item">
         <div class="version-tag">v1.0.0</div>
         <div class="version-body">
           <h4>Initial Release — Cakra</h4>
@@ -294,7 +301,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 </div>
 
 <footer class="footer">
-  <div class="footer-text">CAKRA v1.0.0 — Drive Test Intelligence · © 2025 · Hak Cipta Dilindungi</div>
+  <div class="footer-text">CAKRA v1.1.0 — Drive Test Intelligence · © 2025 · Hak Cipta Dilindungi</div>
   <div class="footer-links">
     <a href="docs.html" class="footer-link">Panduan Penggunaan</a>
     <a href="about.html" class="footer-link">Tentang Cakra</a>

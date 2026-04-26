@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
    CHARTS.JS — Chart.js rendering
-   Cakra v1.0.0 — 5G NR Charts
+   Cakra v1.1.0 — 5G NR Charts
 ═══════════════════════════════════════════════ */
 
 'use strict';
