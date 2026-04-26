@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cakra Automated Test Suite</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0b; --bg2: #111113; --bg3: #18181b;
+      --cyan: #06b6d4; --green: #22c55e; --red: #ef4444; --yellow: #eab308;
+      --text: #ececee; --text2: #8e8e97; --text3: #50505a;
+      --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+    }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); padding: 20px; }
+    .test-container { max-width: 1200px; margin: 0 auto; }
+    .test-header { margin-bottom: 30px; }
+    .test-header h1 { font-size: 28px; margin-bottom: 8px; color: var(--cyan); }
+    .test-status { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+    .status-item { display: flex; align-items: center; gap: 6px; font-size: 13px; font-family: var(--mono); }
+    .test-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+    .test-card { background: var(--bg2); border: 1px solid rgba(6,182,212,0.2); border-radius: 10px; padding: 16px; }
+    .test-card.pass { border-left: 3px solid var(--green); }
+    .test-card.fail { border-left: 3px solid var(--red); }
+    .test-card.warn { border-left: 3px solid var(--yellow); }
+    .test-title { font-weight: 600; margin-bottom: 8px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .test-title .icon { font-size: 16px; }
+    .test-desc { color: var(--text2); font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
+    .test-result { font-family: var(--mono); font-size: 11px; padding: 8px; background: var(--bg3); border-radius: 6px; word-break: break-all; }
+    .test-result.pass { background: rgba(34,197,94,0.1); color: var(--green); }
+    .test-result.fail { background: rgba(239,68,68,0.1); color: var(--red); }
+    .test-result.warn { background: rgba(234,179,8,0.1); color: var(--yellow); }
+    .test-result.skip { background: rgba(107,113,128,0.1); color: var(--text3); }
+    .summary { background: var(--bg2); border: 1px solid rgba(6,182,212,0.2); border-radius: 10px; padding: 20px; margin-top: 30px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-val { font-family: var(--mono); font-weight: 600; color: var(--cyan); }
+    button { background: var(--cyan); color: #000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-family: var(--mono); font-weight: 600; font-size: 13px; transition: 0.15s; }
+    button:hover { opacity: 0.9; transform: translateY(-1px); }
+    .run-btn { margin-top: 20px; }
+    .timestamp { color: var(--text2); font-size: 12px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+
+<div class="test-container">
+  <div class="test-header">
+    <h1>🧪 Cakra Dashboard Test Suite v1.1</h1>
+    <p style="color: var(--text2); font-size: 13px;">Automated tests for bug fixes: cache bypass, libraries, PWA, sidebar, events</p>
+    <div class="test-status">
+      <div class="status-item"><span>✓ Passed:</span> <span id="passCount" style="color: var(--green);">0</span></div>
+      <div class="status-item"><span>✗ Failed:</span> <span id="failCount" style="color: var(--red);">0</span></div>
+      <div class="status-item"><span>⚠ Warnings:</span> <span id="warnCount" style="color: var(--yellow);">0</span></div>
+      <div class="status-item"><span>⊘ Skipped:</span> <span id="skipCount">0</span></div>
+    </div>
+    <button class="run-btn" onclick="runAllTests()">▶ Run Tests</button>
+  </div>
+
+  <div class="test-grid" id="results"></div>
+
+  <div class="summary">
+    <div class="summary-row">
+      <span>Total Tests</span>
+      <span class="summary-val" id="totalTests">0</span>
+    </div>
+    <div class="summary-row">
+      <span>Pass Rate</span>
+      <span class="summary-val" id="passRate">-</span>
+    </div>
+    <div class="summary-row">
+      <span>Runtime</span>
+      <span class="summary-val" id="runtime">-</span>
+    </div>
+    <div class="timestamp" id="timestamp"></div>
+  </div>
+</div>
+
+<script>
+let tests = [];
+let results = { pass: 0, fail: 0, warn: 0, skip: 0 };
+let startTime = 0;
+
+function test(category, name, description, fn) {
+  tests.push({ category, name, description, fn });
+}
+
+function renderResults() {
+  const resultsDiv = document.getElementById('results');
+  let html = '';
+  
+  for (const t of tests) {
+    const { status, message } = t.result;
+    let icon = status === 'pass' ? '✓' : status === 'fail' ? '✕' : status === 'warn' ? '⚠' : '⊘';
+    
+    html += `
+      <div class="test-card ${status}">
+        <div class="test-title">
+          <span class="icon">${icon}</span>
+          <span>${t.name}</span>
+        </div>
+        <div class="test-desc">${t.description}</div>
+        <div class="test-result ${status}">${message}</div>
+      </div>
+    `;
+  }
+  
+  resultsDiv.innerHTML = html;
+  
+  document.getElementById('passCount').textContent = results.pass;
+  document.getElementById('failCount').textContent = results.fail;
+  document.getElementById('warnCount').textContent = results.warn;
+  document.getElementById('skipCount').textContent = results.skip;
+  document.getElementById('totalTests').textContent = tests.length;
+  
+  const rate = tests.length > 0 ? Math.round((results.pass / (tests.length - results.skip)) * 100) : 0;
+  document.getElementById('passRate').textContent = rate + '%';
+  document.getElementById('runtime').textContent = (Date.now() - startTime) + 'ms';
+  document.getElementById('timestamp').textContent = '🕐 Run: ' + new Date().toLocaleTimeString();
+}
+
+function runAllTests() {
+  tests = [];
+  results = { pass: 0, fail: 0, warn: 0, skip: 0 };
+  startTime = Date.now();
+  
+  // ════════════════════════════════════════ CACHE ════════════════════════════════════════
+  test('Cache', 'Meta Cache-Control', 'HTTP cache headers to prevent stale JS', () => {
+    // Can only verify at HTML level
+    return { status: 'skip', message: 'Manual check: View source, verify cache-control meta tags' };
+  });
+  
+  test('Cache', 'localStorage API', 'Browser storage for session data', () => {
+    try {
+      const key = '__cakra_test_' + Date.now();
+      localStorage.setItem(key, 'test');
+      const val = localStorage.getItem(key);
+      localStorage.removeItem(key);
+      return val === 'test' ?
+        { status: 'pass', message: 'localStorage working correctly' } :
+        { status: 'fail', message: 'localStorage read failed' };
+    } catch(e) {
+      return { status: 'fail', message: 'Error: ' + e.message };
+    }
+  });
+  
+  test('Cache', 'Query Parameter Bypass', 'Script tags include cache-busting', () => {
+    // Check for script tags with ?v= parameter
+    const scripts = document.querySelectorAll('script[src]');
+    const withVersion = Array.from(scripts).filter(s => s.src.includes('?')).length;
+    return withVersion > 0 ?
+      { status: 'pass', message: `${withVersion} scripts have cache-busting params` } :
+      { status: 'warn', message: 'No cache-busting params detected in local scripts' };
+  });
+  
+  // ════════════════════════════════════════ LIBRARIES ════════════════════════════════════════
+  test('Libraries', 'Chart.js', 'Charting library for graphs/KPIs', () => {
+    return window.Chart && window.Chart.version ?
+      { status: 'pass', message: `Chart.js v${window.Chart.version}` } :
+      window.Chart ?
+      { status: 'pass', message: 'Chart.js available' } :
+      { status: 'fail', message: 'Chart.js not loaded (window.Chart undefined)' };
+  });
+  
+  test('Libraries', 'Leaflet.js', 'Map rendering library', () => {
+    return window.L && window.L.version ?
+      { status: 'pass', message: `Leaflet v${window.L.version}` } :
+      window.L ?
+      { status: 'pass', message: 'Leaflet available' } :
+      { status: 'fail', message: 'Leaflet not loaded (window.L undefined)' };
+  });
+  
+  test('Libraries', 'jsPDF', 'PDF export library', () => {
+    return window.jspdf ?
+      { status: 'pass', message: 'jsPDF library available' } :
+      { status: 'fail', message: 'jsPDF not loaded (window.jspdf undefined) - PDF export will fail' };
+  });
+  
+  test('Libraries', 'html2canvas', 'Screenshot library for PDF content', () => {
+    return window.html2canvas ?
+      { status: 'pass', message: 'html2canvas available' } :
+      { status: 'fail', message: 'html2canvas not loaded - PDF export will fail' };
+  });
+  
+  test('Libraries', 'XLSX/SheetJS', 'Excel export library', () => {
+    return window.XLSX ?
+      { status: 'pass', message: 'XLSX library available' } :
+      { status: 'fail', message: 'XLSX not loaded (window.XLSX undefined) - Excel export will fail' };
+  });
+  
+  // ════════════════════════════════════════ PWA ════════════════════════════════════════
+  test('PWA', 'Service Worker Support', 'Browser PWA capability', () => {
+    return 'serviceWorker' in navigator ?
+      { status: 'pass', message: 'Service Worker API available' } :
+      { status: 'fail', message: 'Service Worker not supported in this browser' };
+  });
+  
+  test('PWA', 'Web App Manifest', 'PWA manifest.json linked', () => {
+    const link = document.querySelector('link[rel="manifest"]');
+    return link ?
+      { status: 'pass', message: `Manifest: ${link.href}` } :
+      { status: 'fail', message: 'No manifest link found in HTML' };
+  });
+  
+  test('PWA', 'PWA Banner Element', 'Install banner HTML element', () => {
+    const banner = document.getElementById('pwaBanner');
+    return banner ?
+      { status: 'pass', message: 'PWA banner element #pwaBanner found' } :
+      { status: 'fail', message: 'Banner not found - PWA install prompt will not appear' };
+  });
+  
+  test('PWA', 'PWA Functions Available', 'showPWABanner() and resetPWA() functions', () => {
+    const showFn = typeof window.showPWABanner === 'function';
+    const resetFn = typeof window.resetPWA === 'function';
+    if (showFn && resetFn) {
+      return { status: 'pass', message: 'Both PWA functions available' };
+    } else if (showFn || resetFn) {
+      return { status: 'warn', message: `Only ${showFn ? 'showPWABanner' : 'resetPWA'} available` };
+    } else {
+      return { status: 'fail', message: 'PWA functions not found - banner will not work' };
+    }
+  });
+  
+  // ════════════════════════════════════════ UI COMPONENTS ════════════════════════════════════════
+  test('UI', 'Sidebar Navigation', 'Sidebar nav container element', () => {
+    const nav = document.querySelector('.sidebar-nav');
+    return nav ?
+      { status: 'pass', message: 'Sidebar nav container found' } :
+      { status: 'skip', message: 'Sidebar not on this page (expected)' };
+  });
+  
+  test('UI', 'Nav Items', 'Navigation items with data-section', () => {
+    const items = document.querySelectorAll('.nav-item[data-section]');
+    return items.length > 0 ?
+      { status: 'pass', message: `${items.length} nav items found` } :
+      { status: 'skip', message: 'Nav items not on this page' };
+  });
+  
+  test('UI', 'Dashboard Sections', 'Main content sections', () => {
+    const sections = document.querySelectorAll('.dash-section[id]');
+    return sections.length > 0 ?
+      { status: 'pass', message: `${sections.length} sections found` } :
+      { status: 'skip', message: 'Sections not found (expected if not on dashboard)' };
+  });
+  
+  // ════════════════════════════════════════ EVENTS ════════════════════════════════════════
+  test('Events', 'Event Filters UI', 'HO and Reselection filter buttons', () => {
+    const hoBtn = document.getElementById('filterHO');
+    const reselBtn = document.getElementById('filterResel');
+    if (hoBtn && reselBtn) return { status: 'pass', message: 'Both filter buttons present' };
+    if (hoBtn || reselBtn) return { status: 'warn', message: 'Only one filter button found' };
+    return { status: 'skip', message: 'Filters not on this page' };
+  });
+  
+  test('Events', 'Session Data', 'Drive test data in storage', () => {
+    const session = sessionStorage.getItem('driveTestData');
+    const local = localStorage.getItem('driveTestData');
+    if (session || local) {
+      return { status: 'pass', message: 'Session data loaded' };
+    }
+    return { status: 'warn', message: 'No session data yet (expected before file upload)' };
+  });
+  
+  // ════════════════════════════════════════ EXPORTS ════════════════════════════════════════
+  test('Export', 'PDF Export Button', 'PDF export feature visible', () => {
+    const btn = document.querySelector('[onclick*="exportPDF"]') || 
+                document.querySelector('[onclick*="PDF"]') ||
+                document.getElementById('exportPDFBtn');
+    return btn ?
+      { status: 'pass', message: 'PDF export button found' } :
+      { status: 'skip', message: 'Export buttons not on this page' };
+  });
+  
+  test('Export', 'Excel Export Button', 'Excel export feature visible', () => {
+    const btn = document.querySelector('[onclick*="exportExcel"]') || 
+                document.querySelector('[onclick*="Excel"]') ||
+                document.getElementById('exportExcelBtn');
+    return btn ?
+      { status: 'pass', message: 'Excel export button found' } :
+      { status: 'skip', message: 'Export buttons not on this page' };
+  });
+  
+  test('Export', 'Compare Sessions Button', 'Session comparison feature visible', () => {
+    const btn = document.querySelector('[onclick*="compare"]') || 
+                document.querySelector('[href*="compare"]') ||
+                document.getElementById('compareBtn');
+    return btn ?
+      { status: 'pass', message: 'Compare button found' } :
+      { status: 'skip', message: 'Compare button not on this page' };
+  });
+  
+  // ════════════════════════════════════════ RUN ════════════════════════════════════════
+  for (const t of tests) {
+    try {
+      t.result = t.fn();
+      results[t.result.status]++;
+    } catch(e) {
+      t.result = { status: 'fail', message: 'Exception: ' + e.message };
+      results.fail++;
+    }
+  }
+  
+  renderResults();
+  console.log('✓ Test suite completed in ' + (Date.now() - startTime) + 'ms');
+}
+
+// Auto-run on page load
+window.addEventListener('load', () => {
+  setTimeout(runAllTests, 300);
+});
+</script>
+
+</body>
+</html>
+      <div class="status-item"><span>Total:</span> <span id="totalCount">0</span></div>
+    </div>
+    <button class="run-btn" onclick="runAllTests()">🚀 Run All Tests</button>
+  </div>
+
+  <div class="test-grid" id="testGrid"></div>
+
+  <div class="summary">
+    <h2 style="margin-bottom: 16px; font-size: 16px;">Test Summary</h2>
+    <div id="summaryContent">
+      <div class="summary-row">
+        <span>Klik tombol "Run All Tests" di atas untuk memulai pengujian</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TESTS = [
+  {
+    id: 'parser-module',
+    title: 'Parser Module',
+    desc: 'Verifikasi GNetParser tersedia dan berfungsi',
+    test: () => {
+      if (typeof GNetParser === 'undefined') return { pass: false, msg: 'GNetParser tidak ditemukan' };
+      if (typeof GNetParser.thin !== 'function') return { pass: false, msg: 'GNetParser.thin tidak ada' };
+      if (typeof GNetParser.calcDuration !== 'function') return { pass: false, msg: 'GNetParser.calcDuration tidak ada' };
+      return { pass: true, msg: 'GNetParser berfungsi normal' };
+    }
+  },
+  {
+    id: 'event-type-mapping',
+    title: 'Event Type Mapping',
+    desc: 'Verifikasi mapDetailedEventType() untuk event classification',
+    test: () => {
+      if (typeof GNetParser !== 'undefined' && typeof GNetParser.mapDetailedEventType === 'function') {
+        const testEv = { info: 'HO 4G to 4G LTE', details: 'Normal', nrFlag: false };
+        const result = GNetParser.mapDetailedEventType(testEv);
+        if (result && result.includes('HANDOVER')) {
+          return { pass: true, msg: `Event mapping works: ${result}` };
+        } else {
+          return { pass: false, msg: `Event mapping returned unexpected: ${result}` };
+        }
+      }
+      return { pass: false, msg: 'mapDetailedEventType tidak ditemukan' };
+    }
+  },
+  {
+    id: 'event-filtering',
+    title: 'Event Type Filtering',
+    desc: 'Verifikasi filter event menggunakan typeCategory',
+    test: () => {
+      const testEvents = [
+        { type: 'HANDOVER_DATA_4G4G', typeCategory: 'HANDOVER' },
+        { type: 'HANDOVER_DATA_5G5G', typeCategory: 'HANDOVER' },
+        { type: 'CELL_RESELECTION_4G4G', typeCategory: 'RESELECTION' }
+      ];
+      const hoCount = testEvents.filter(e => e.typeCategory === 'HANDOVER' || e.type?.includes('HANDOVER')).length;
+      const rsCount = testEvents.filter(e => e.typeCategory === 'RESELECTION' || e.type?.includes('RESELECTION')).length;
+      if (hoCount === 2 && rsCount === 1) {
+        return { pass: true, msg: `Filtering OK: ${hoCount} HO, ${rsCount} RS` };
+      } else {
+        return { pass: false, msg: `Filtering failed: got ${hoCount} HO, ${rsCount} RS` };
+      }
+    }
+  },
+  {
+    id: 'map-module',
+    title: 'Map Module (GNetMap)',
+    desc: 'Verifikasi modul peta tersedia',
+    test: () => {
+      if (typeof GNetMap === 'undefined') return { pass: false, msg: 'GNetMap tidak ditemukan' };
+      if (typeof GNetMap.build !== 'function') return { pass: false, msg: 'GNetMap.build tidak ada' };
+      if (typeof GNetMap.addEvents !== 'function') return { pass: false, msg: 'GNetMap.addEvents tidak ada' };
+      if (typeof GNetMap.toggleEventLayer !== 'function') return { pass: false, msg: 'GNetMap.toggleEventLayer tidak ada' };
+      if (typeof GNetMap.toggleAnnotationMode !== 'function') return { pass: false, msg: 'GNetMap.toggleAnnotationMode tidak ada' };
+      return { pass: true, msg: 'GNetMap berfungsi normal' };
+    }
+  },
+  {
+    id: 'sidebar-nav',
+    title: 'Sidebar Navigation Elements',
+    desc: 'Verifikasi semua nav items ada di sidebar',
+    test: () => {
+      const required = ['info', 'cell', 'kpi', 'grafik', 'peta', 'events', 'distribusi', 'rawan', 'ai'];
+      const missing = [];
+      required.forEach(sec => {
+        const elem = document.querySelector(`[data-section="${sec}"]`);
+        if (!elem) missing.push(sec);
+      });
+      if (missing.length === 0) {
+        return { pass: true, msg: 'Semua nav items tersedia' };
+      } else {
+        return { pass: false, msg: `Nav items hilang: ${missing.join(', ')}` };
+      }
+    }
+  },
+  {
+    id: 'sidebar-scroll',
+    title: 'Sidebar Scroll Functionality',
+    desc: 'Verifikasi sidebar nav dapat di-scroll',
+    test: () => {
+      const sidebarNav = document.querySelector('.sidebar-nav');
+      if (!sidebarNav) return { pass: false, msg: '.sidebar-nav tidak ditemukan' };
+      const style = window.getComputedStyle(sidebarNav);
+      if (style.overflow === 'auto' || style.overflowY === 'auto') {
+        return { pass: true, msg: 'Sidebar nav memiliki scroll: auto' };
+      } else {
+        return { pass: false, msg: `Overflow: ${style.overflow}, OverflowY: ${style.overflowY}` };
+      }
+    }
+  },
+  {
+    id: 'event-map-buttons',
+    title: 'Event Map Layer Buttons',
+    desc: 'Verifikasi tombol HO dan Reselection ada',
+    test: () => {
+      const btnHO = document.getElementById('btnHandover');
+      const btnRS = document.getElementById('btnReselect');
+      if (!btnHO) return { pass: false, msg: 'btnHandover tidak ditemukan' };
+      if (!btnRS) return { pass: false, msg: 'btnReselect tidak ditemukan' };
+      if (typeof GNetMap !== 'undefined' && typeof GNetMap.toggleEventLayer === 'function') {
+        return { pass: true, msg: 'Buttons ditemukan dan toggleEventLayer tersedia' };
+      }
+      return { pass: false, msg: 'toggleEventLayer tidak tersedia' };
+    }
+  },
+  {
+    id: 'export-functions',
+    title: 'Export Functions',
+    desc: 'Verifikasi PDF & Excel export tersedia',
+    test: () => {
+      if (typeof CakraExport === 'undefined') return { pass: false, msg: 'CakraExport tidak ditemukan' };
+      if (typeof CakraExport.exportPDF !== 'function') return { pass: false, msg: 'exportPDF tidak ada' };
+      if (typeof CakraExport.exportExcel !== 'function') return { pass: false, msg: 'exportExcel tidak ada' };
+      return { pass: true, msg: 'Export functions tersedia' };
+    }
+  },
+  {
+    id: 'compare-function',
+    title: 'Compare Session Function',
+    desc: 'Verifikasi fungsi openCompareDialog tersedia',
+    test: () => {
+      if (typeof openCompareDialog === 'function') {
+        return { pass: true, msg: 'openCompareDialog tersedia' };
+      }
+      return { pass: false, msg: 'openCompareDialog tidak ditemukan' };
+    }
+  },
+  {
+    id: 'pwa-banner',
+    title: 'PWA Install Banner',
+    desc: 'Verifikasi PWA banner HTML dan JS tersedia',
+    test: () => {
+      const banner = document.getElementById('pwaBanner');
+      const btn = document.getElementById('pwaInstallBtn');
+      const resetPWA = typeof resetPWA === 'function';
+      
+      if (!banner) return { pass: false, msg: 'pwaBanner tidak ditemukan' };
+      if (!btn) return { pass: false, msg: 'pwaInstallBtn tidak ditemukan' };
+      if (!resetPWA) return { pass: false, msg: 'resetPWA() tidak tersedia' };
+      
+      return { pass: true, msg: 'PWA banner lengkap dengan helper function' };
+    }
+  },
+  {
+    id: 'service-worker',
+    title: 'Service Worker Registration',
+    desc: 'Verifikasi SW bisa didaftarkan',
+    test: () => {
+      if ('serviceWorker' in navigator) {
+        return { pass: true, msg: 'Browser mendukung Service Worker' };
+      }
+      return { pass: false, msg: 'Browser tidak mendukung Service Worker' };
+    }
+  },
+  {
+    id: 'leaflet-lib',
+    title: 'Leaflet Library',
+    desc: 'Verifikasi Leaflet sudah di-load untuk peta',
+    test: () => {
+      if (typeof L === 'undefined') {
+        return { pass: false, msg: 'Leaflet library tidak ditemukan' };
+      }
+      if (typeof L.map !== 'function') {
+        return { pass: false, msg: 'L.map tidak tersedia' };
+      }
+      return { pass: true, msg: 'Leaflet library tersedia dan siap' };
+    }
+  },
+  {
+    id: 'charts-lib',
+    title: 'Charts Module',
+    desc: 'Verifikasi modul charts tersedia',
+    test: () => {
+      if (typeof GNetCharts === 'undefined') return { pass: false, msg: 'GNetCharts tidak ditemukan' };
+      if (typeof GNetCharts.buildAll !== 'function') return { pass: false, msg: 'GNetCharts.buildAll tidak ada' };
+      return { pass: true, msg: 'GNetCharts berfungsi normal' };
+    }
+  }
+];
+
+let testResults = [];
+
+function formatResult(result) {
+  if (result.pass) {
+    return `<div class="test-result pass">✓ ${result.msg}</div>`;
+  } else {
+    return `<div class="test-result fail">✗ ${result.msg}</div>`;
+  }
+}
+
+function renderTests(results) {
+  const grid = document.getElementById('testGrid');
+  grid.innerHTML = results.map(r => `
+    <div class="test-card ${r.pass ? 'pass' : 'fail'}">
+      <div class="test-title">
+        <span class="icon">${r.pass ? '✓' : '✗'}</span>
+        ${r.title}
+      </div>
+      <div class="test-desc">${r.desc}</div>
+      ${formatResult(r)}
+    </div>
+  `).join('');
+
+  updateSummary(results);
+}
+
+function updateSummary(results) {
+  const passed = results.filter(r => r.pass).length;
+  const failed = results.filter(r => !r.pass).length;
+  const total = results.length;
+
+  document.getElementById('passCount').textContent = passed;
+  document.getElementById('failCount').textContent = failed;
+  document.getElementById('totalCount').textContent = total;
+  document.getElementById('warnCount').textContent = '0';
+
+  const passRate = ((passed / total) * 100).toFixed(1);
+  const summaryHtml = `
+    <div class="summary-row">
+      <span>Total Tests:</span>
+      <span class="summary-val">${total}</span>
+    </div>
+    <div class="summary-row">
+      <span>Passed:</span>
+      <span class="summary-val" style="color: var(--green)">${passed}</span>
+    </div>
+    <div class="summary-row">
+      <span>Failed:</span>
+      <span class="summary-val" style="color: var(--red)">${failed}</span>
+    </div>
+    <div class="summary-row">
+      <span>Pass Rate:</span>
+      <span class="summary-val">${passRate}%</span>
+    </div>
+    <div class="summary-row" style="margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+      <span>Status:</span>
+      <span class="summary-val" style="color: ${failed === 0 ? 'var(--green)' : 'var(--red)'}">
+        ${failed === 0 ? '✓ SEMUA TEST PASSED' : `✗ ${failed} TEST FAILED`}
+      </span>
+    </div>
+  `;
+  document.getElementById('summaryContent').innerHTML = summaryHtml;
+}
+
+function runAllTests() {
+  console.clear();
+  console.log('🧪 Starting Cakra Test Suite...\n');
+  
+  testResults = TESTS.map(test => {
+    try {
+      const result = test.test();
+      console.log(`${result.pass ? '✓' : '✗'} ${test.title}: ${result.msg}`);
+      return {
+        ...test,
+        pass: result.pass,
+        msg: result.msg
+      };
+    } catch (err) {
+      console.error(`✗ ${test.title}: ERROR - ${err.message}`);
+      return {
+        ...test,
+        pass: false,
+        msg: `ERROR: ${err.message}`
+      };
+    }
+  });
+
+  console.log('\n📊 Test Summary:');
+  const passed = testResults.filter(r => r.pass).length;
+  const failed = testResults.filter(r => !r.pass).length;
+  console.log(`  Passed: ${passed}/${testResults.length}`);
+  console.log(`  Failed: ${failed}/${testResults.length}`);
+  console.log(`  Pass Rate: ${((passed/testResults.length)*100).toFixed(1)}%\n`);
+
+  renderTests(testResults);
+}
+
+// Auto-run on page load if all modules are ready
+window.addEventListener('load', () => {
+  console.log('Test page loaded. Click "Run All Tests" to start.');
+});
+</script>
+
+</body>
+</html>

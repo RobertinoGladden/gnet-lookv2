@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="theme-color" content="#06b6d4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cakra">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compare Sessions — Cakra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root {
+  --bg:#0a0a0b;--bg2:#111113;--bg3:#18181b;--bg4:#1f1f23;--bg5:#26262c;
+  --border:rgba(255,255,255,0.055);--border2:rgba(255,255,255,0.09);
+  --text:#ececee;--text2:#8e8e97;--text3:#50505a;
+  --cyan:#06b6d4;--cyan-hi:#22d3ee;--cyan-dim:rgba(6,182,212,0.10);
+  --green:#22c55e;--green-dim:rgba(34,197,94,0.10);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.10);
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',system-ui,sans-serif;
+}
+[data-theme="dark"] {
+  --bg:#0a0a0b;--bg2:#111113;--bg3:#18181b;--bg4:#1f1f23;--bg5:#26262c;
+  --border:rgba(255,255,255,0.055);--border2:rgba(255,255,255,0.09);
+  --text:#ececee;--text2:#8e8e97;--text3:#50505a;
+  --cyan-dim:rgba(6,182,212,0.10);
+}
+[data-theme="light"] {
+  --bg:#f8f9fa;--bg2:#ffffff;--bg3:#f1f3f5;--bg4:#e9ecef;--bg5:#dee2e6;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.12);
+  --text:#0a0a0b;--text2:#495057;--text3:#adb5bd;
+  --cyan-dim:rgba(6,182,212,0.08);
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 24px;height:52px;background:rgba(10,10,11,0.9);border-bottom:1px solid var(--border);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:space-between;gap:12px}
+[data-theme="light"] .nav{background:rgba(248,249,250,0.92)}
+.nav-logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text)}
+.nav-logo-icon{color:var(--cyan);font-size:18px}
+.nav-logo-text{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:0.08em}
+.nav-right{display:flex;align-items:center;gap:8px}
+.theme-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;cursor:pointer;font-size:13px;color:var(--text2);transition:0.15s}
+.theme-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+
+.container{max-width:1200px;margin:0 auto;padding:20px}
+.header{text-align:center;margin:80px 0 40px;padding:40px}
+.title{font-family:var(--mono);font-size:42px;font-weight:600;margin-bottom:12px}
+.subtitle{font-size:14px;color:var(--text2);margin-bottom:24px}
+
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:40px;align-items:start}
+@media(max-width:900px){.compare-grid{grid-template-columns:1fr;gap:16px}}
+
+.session-card{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:20px;min-height:200px}
+.session-card-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.session-badge{font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:0.06em}
+.session-badge-1{background:rgba(6,182,212,0.12);color:var(--cyan);border:1px solid rgba(6,182,212,0.2)}
+.session-badge-2{background:rgba(34,197,94,0.10);color:var(--green);border:1px solid rgba(34,197,94,0.18)}
+.session-card-label{font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em}
+
+.session-info-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:120px;color:var(--text3);font-size:12px}
+.placeholder-icon{font-size:20px;opacity:0.4;animation:spin 2s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.session-file-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);font-weight:500;word-break:break-all;margin-bottom:4px}
+.session-file-row svg{flex-shrink:0;color:var(--cyan)}
+.session-stats{margin-top:4px}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:11.5px;border-bottom:1px solid var(--border)}
+.stat-row:last-child{border-bottom:none}
+.stat-label{color:var(--text2)}
+.stat-value{font-family:var(--mono);font-weight:600;color:var(--cyan)}
+
+/* Upload zone */
+.upload-zone{background:var(--bg3);border:2px dashed var(--border2);border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;min-height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--cyan);background:var(--cyan-dim)}
+.upload-zone.file-ready{border-color:var(--green);border-style:solid;background:rgba(34,197,94,0.06)}
+.upload-icon-wrap{width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--bg4);border-radius:10px;color:var(--text3);transition:0.2s;margin-bottom:2px}
+.upload-zone:hover .upload-icon-wrap,.upload-zone.drag-over .upload-icon-wrap{background:var(--cyan-dim);color:var(--cyan)}
+.upload-zone.file-ready .upload-icon-wrap{background:rgba(34,197,94,0.12);color:var(--green)}
+.upload-label{font-size:12px;color:var(--text);font-weight:500}
+.upload-sub{font-size:10.5px;color:var(--text3)}
+.upload-filename{font-family:var(--mono);font-size:11px;color:var(--green);font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.btn-change-file{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text3);background:none;border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;transition:0.15s}
+.btn-change-file:hover{color:var(--cyan);border-color:var(--cyan)}
+
+.comparison-section{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:24px;margin-bottom:24px}
+.section-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px}
+
+.comparison-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}
+.comparison-table th{background:var(--bg3);padding:12px;text-align:left;font-weight:600;color:var(--text);border-bottom:1px solid var(--border)}
+.comparison-table td{padding:10px 12px;border-bottom:1px solid var(--border)}
+.comparison-table tr:last-child td{border-bottom:none}
+.col-metric{color:var(--text2);font-family:var(--mono);font-size:11px}
+.col-session1{background:rgba(6,182,212,0.05)}
+.col-session2{background:rgba(34,197,94,0.05)}
+.col-diff{background:rgba(234,179,8,0.05);font-weight:600}
+.val-better{color:var(--green)}
+.val-worse{color:var(--red)}
+
+.event-comparison{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px}
+.event-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:10.5px}
+.event-type{font-family:var(--mono);font-weight:600;color:var(--cyan);margin-bottom:6px}
+.event-info{color:var(--text2);line-height:1.6}
+
+.actions{display:flex;gap:12px;justify-content:center;margin-top:40px;flex-wrap:wrap}
+.btn{font-family:var(--mono);font-size:11px;font-weight:600;padding:12px 24px;border-radius:8px;border:none;cursor:pointer;transition:0.15s;letter-spacing:0.04em;display:inline-flex;align-items:center;gap:7px}
+.btn-primary{background:var(--cyan);color:#000}
+.btn-primary:hover{background:var(--cyan-hi)}
+.btn-secondary{background:var(--bg3);border:1px solid var(--border2);color:var(--text2)}
+.btn-secondary:hover{border-color:var(--cyan);color:var(--cyan)}
+
+.status-message{text-align:center;padding:24px;font-size:13px;color:var(--text2);margin:24px 0}
+.status-loading{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.back-btn{font-family:var(--mono);font-size:11px;color:var(--cyan);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:24px;transition:0.15s}
+.back-btn:hover{color:var(--cyan-hi)}
+</style>
+</head>
+<body class="compare-page">
+<script>
+// Prevent FOUC — apply theme before first paint
+(function(){
+  const saved = localStorage.getItem('cakra_theme') || 'system';
+  const themes = ['dark','light','system'];
+  const themeToApply = themes.includes(saved) ? saved : 'dark';
+  if (themeToApply === 'system') {
+    const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', themeToApply);
+  }
+})();
+</script>
+
+<nav class="nav">
+  <a href="dashboard.html" class="nav-logo">
+    <span class="nav-logo-icon">◈</span>
+    <span class="nav-logo-text">CAKRA</span>
+  </a>
+  <div class="nav-right">
+    <button class="theme-btn" id="themeBtnCompare" onclick="cycleTheme()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+  </div>
+</nav>
+
+<div class="container">
+  <a href="dashboard.html" class="back-btn">← Kembali ke Dashboard</a>
+
+  <div class="header">
+    <div class="title">Bandingkan 2 Sesi</div>
+    <div class="subtitle">Analisis perbandingan detail antara dua sesi pengukuran drive test</div>
+  </div>
+
+  <div class="compare-grid">
+    <!-- Session 1 -->
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-badge session-badge-1">Sesi 1</div>
+        <div class="session-card-label">Current Session</div>
+      </div>
+      <div id="session1Info" class="session-info-placeholder">
+        <div class="placeholder-icon">⟳</div>
+        <div>Memuat data sesi aktif...</div>
+      </div>
+    </div>
+
+    <!-- Session 2 -->
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-badge session-badge-2">Sesi 2</div>
+        <div class="session-card-label">Upload Baru</div>
+      </div>
+
+      <!-- State: empty/idle -->
+      <div id="uploadIdle">
+        <div class="upload-zone" id="uploadZone"
+          onclick="document.getElementById('fileInput').click()"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="handleDrop(event)">
+          <div class="upload-icon-wrap" id="uploadIconWrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="upload-label" id="uploadLabel">Drop file di sini</div>
+          <div class="upload-sub" id="uploadSub">atau klik untuk pilih · .txt .csv</div>
+          <input type="file" id="fileInput" accept=".txt,.csv" style="display:none" onchange="handleFileSelect(event)">
+        </div>
+      </div>
+
+      <!-- State: file selected / loaded -->
+      <div id="session2Info" style="display:none"></div>
+      <div id="session2Actions" style="display:none;margin-top:12px">
+        <button class="btn-change-file" onclick="resetSession2()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          Ganti File
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="comparisonResults" style="display:none">
+    <!-- KPI Comparison -->
+    <div class="comparison-section">
+      <div class="section-title">Perbandingan KPI</div>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th style="width:35%">Metrik</th>
+            <th style="width:22%">Sesi 1</th>
+            <th style="width:22%">Sesi 2</th>
+            <th style="width:21%">Perbedaan</th>
+          </tr>
+        </thead>
+        <tbody id="kpiComparison"></tbody>
+      </table>
+    </div>
+
+    <!-- Signal Distribution Comparison -->
+    <div class="comparison-section">
+      <div class="section-title">Distribusi Sinyal RSRP</div>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Range (dBm)</th>
+            <th class="col-session1">Sesi 1</th>
+            <th class="col-session2">Sesi 2</th>
+          </tr>
+        </thead>
+        <tbody id="distComparison"></tbody>
+      </table>
+    </div>
+
+    <!-- Events Comparison -->
+    <div class="comparison-section" id="eventsSection" style="display:none">
+      <div class="section-title">Perbandingan Events</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:8px">Sesi 1</div>
+          <div class="event-comparison" id="session1Events"></div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:8px">Sesi 2</div>
+          <div class="event-comparison" id="session2Events"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cell Distribution -->
+    <div class="comparison-section">
+      <div class="section-title">Serving Cell Distribution</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:8px">Sesi 1</div>
+          <div id="cellDist1" style="font-size:11px;line-height:1.8;color:var(--text2)"></div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:8px">Sesi 2</div>
+          <div id="cellDist2" style="font-size:11px;line-height:1.8;color:var(--text2)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-primary" id="compareBtn" onclick="runComparison()" style="display:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>️ Jalankan Perbandingan</button>
+    <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">Kembali ke Dashboard</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="js/parser.js"></script>
+
+<script>
+let SESSION1_DATA = null;
+let SESSION2_DATA = null;
+
+// ══════════════════════════════════════════
+// THEME SYSTEM
+// ══════════════════════════════════════════
+const THEMES = ['dark','light','system'];
+const ICONS  = ['<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'];
+let themeIdx = 0;
+
+function initTheme() {
+  const saved = localStorage.getItem('cakra_theme') || 'system';
+  themeIdx = THEMES.indexOf(saved);
+  if (themeIdx < 0) themeIdx = 0;
+  applyTheme();
+}
+
+function cycleTheme() {
+  themeIdx = (themeIdx + 1) % THEMES.length;
+  localStorage.setItem('cakra_theme', THEMES[themeIdx]);
+  applyTheme();
+}
+
+function applyTheme() {
+  const theme = THEMES[themeIdx];
+  const btn = document.getElementById('themeBtnCompare');
+  if (theme === 'system') {
+    const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+  if (btn) btn.innerHTML = ICONS[themeIdx];
+}
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (THEMES[themeIdx] === 'system') applyTheme();
+});
+
+// ══════════════════════════════════════════
+// LOAD SESSION 1 FROM STORAGE
+// ══════════════════════════════════════════
+function loadSession1() {
+  try {
+    const raw = sessionStorage.getItem('gnet_data');
+    if (!raw) {
+      document.getElementById('session1Info').innerHTML = '<span style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Tidak ada data aktif</span>';
+      return false;
+    }
+    SESSION1_DATA = JSON.parse(raw);
+    if (!SESSION1_DATA.length) {
+      document.getElementById('session1Info').innerHTML = '<span style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Data kosong</span>';
+      return false;
+    }
+    
+    displaySessionInfo(SESSION1_DATA, 'session1Info', sessionStorage.getItem('gnet_filename') || 'Active Session');
+    return true;
+  } catch(e) {
+    console.error('Load session 1 error:', e);
+    document.getElementById('session1Info').innerHTML = '<span style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Error loading session</span>';
+    return false;
+  }
+}
+
+function displaySessionInfo(data, elementId, filename) {
+  const rsrps = data.map(d => d.rsrp).filter(v => !isNaN(v));
+  const speeds = data.map(d => d.speed).filter(v => !isNaN(v));
+  
+  const stats = [
+    ['Data Points', data.length.toLocaleString()],
+    ['Avg RSRP', rsrps.length ? (rsrps.reduce((a,b)=>a+b)/rsrps.length).toFixed(1) + ' dBm' : 'N/A'],
+    ['Min RSRP', rsrps.length ? Math.min(...rsrps).toFixed(1) + ' dBm' : 'N/A'],
+    ['Max RSRP', rsrps.length ? Math.max(...rsrps).toFixed(1) + ' dBm' : 'N/A'],
+    ['Avg Speed', speeds.length ? (speeds.reduce((a,b)=>a+b)/speeds.length * 3.6).toFixed(1) + ' km/h' : 'N/A'],
+  ];
+
+  const shortName = filename.length > 42 ? filename.substring(0,40) + '…' : filename;
+  let html = `<div class="session-file-row"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span title="${filename}">${shortName}</span></div><div class="session-stats">`;
+  stats.forEach(([label, value]) => {
+    html += `<div class="stat-row"><span class="stat-label">${label}</span><span class="stat-value">${value}</span></div>`;
+  });
+  html += '</div>';
+  document.getElementById(elementId).innerHTML = html;
+}
+
+// ══════════════════════════════════════════
+// HANDLE FILE UPLOAD
+// ══════════════════════════════════════════
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag-over');
+  const files = e.dataTransfer.files;
+  if (files.length) handleFileSelect({ target: { files } });
+}
+
+function handleFileSelect(e) {
+  const files = e.target.files;
+  if (!files.length) return;
+  
+  const file = files[0];
+
+  // Show loading state on upload zone
+  const zone = document.getElementById('uploadZone');
+  zone.classList.add('drag-over');
+  document.getElementById('uploadLabel').textContent = 'Membaca file...';
+  document.getElementById('uploadSub').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const rows = GNetParser.parseTxt(ev.target.result);
+      if (!rows.length) {
+        zone.classList.remove('drag-over');
+        document.getElementById('uploadLabel').textContent = 'Drop file di sini';
+        document.getElementById('uploadSub').textContent = 'atau klik untuk pilih · .txt .csv';
+        alert('File tidak valid atau tidak ada data terdeteksi.');
+        return;
+      }
+      SESSION2_DATA = rows;
+
+      // Hide upload zone, show session info card
+      document.getElementById('uploadIdle').style.display = 'none';
+      const s2Info = document.getElementById('session2Info');
+      s2Info.style.display = 'block';
+      displaySessionInfo(SESSION2_DATA, 'session2Info', file.name);
+
+      // Show change file button
+      document.getElementById('session2Actions').style.display = 'block';
+
+      // Show compare button
+      document.getElementById('compareBtn').style.display = 'inline-flex';
+    } catch(err) {
+      zone.classList.remove('drag-over');
+      document.getElementById('uploadLabel').textContent = 'Drop file di sini';
+      document.getElementById('uploadSub').textContent = 'atau klik untuk pilih · .txt .csv';
+      alert('Error parsing file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function resetSession2() {
+  SESSION2_DATA = null;
+  document.getElementById('uploadIdle').style.display = 'block';
+  document.getElementById('session2Info').style.display = 'none';
+  document.getElementById('session2Actions').style.display = 'none';
+  document.getElementById('compareBtn').style.display = 'none';
+  document.getElementById('comparisonResults').style.display = 'none';
+  // Reset file input so same file can be re-selected
+  const fi = document.getElementById('fileInput');
+  fi.value = '';
+}
+
+// ══════════════════════════════════════════
+// RUN COMPARISON
+// ══════════════════════════════════════════
+function runComparison() {
+  if (!SESSION1_DATA || !SESSION2_DATA) {
+    alert('Kedua sesi harus tersedia');
+    return;
+  }
+
+  compareKPI();
+  compareDistribution();
+  compareCells();
+  compareEvents();
+  
+  document.getElementById('comparisonResults').style.display = 'block';
+  document.getElementById('comparisonResults').scrollIntoView({ behavior: 'smooth' });
+}
+
+function compareKPI() {
+  const getMetrics = (data) => {
+    const rsrps = data.map(d => d.rsrp).filter(v => !isNaN(v));
+    const rsrqs = data.map(d => d.rsrq).filter(v => !isNaN(v));
+    const snrs = data.map(d => d.snr).filter(v => !isNaN(v));
+    const speeds = data.map(d => d.speed).filter(v => !isNaN(v));
+    const dls = data.map(d => d.dl).filter(v => !isNaN(v));
+    const uls = data.map(d => d.ul).filter(v => !isNaN(v));
+    
+    return {
+      'Avg RSRP': rsrps.length ? (rsrps.reduce((a,b)=>a+b)/rsrps.length).toFixed(1) : 'N/A',
+      'Min RSRP': rsrps.length ? Math.min(...rsrps).toFixed(1) : 'N/A',
+      'Max RSRP': rsrps.length ? Math.max(...rsrps).toFixed(1) : 'N/A',
+      'Avg RSRQ': rsrqs.length ? (rsrqs.reduce((a,b)=>a+b)/rsrqs.length).toFixed(1) : 'N/A',
+      'Avg SINR': snrs.length ? (snrs.reduce((a,b)=>a+b)/snrs.length).toFixed(1) : 'N/A',
+      'Avg Speed': speeds.length ? (speeds.reduce((a,b)=>a+b)/speeds.length).toFixed(1) : 'N/A',
+      'Max Speed': speeds.length ? Math.max(...speeds).toFixed(1) : 'N/A',
+      'Avg DL': dls.length ? (dls.reduce((a,b)=>a+b)/dls.length).toFixed(1) : 'N/A',
+      'Avg UL': uls.length ? (uls.reduce((a,b)=>a+b)/uls.length).toFixed(1) : 'N/A',
+    };
+  };
+
+  const m1 = getMetrics(SESSION1_DATA);
+  const m2 = getMetrics(SESSION2_DATA);
+
+  let html = '';
+  Object.keys(m1).forEach(key => {
+    const v1 = m1[key];
+    const v2 = m2[key];
+    const n1 = parseFloat(v1);
+    const n2 = parseFloat(v2);
+    const diff = isNaN(n1) || isNaN(n2) ? '—' : (n2 - n1).toFixed(1);
+    const diffClass = isNaN(n2) || isNaN(n1) ? '' : (n2 > n1 ? 'val-better' : 'val-worse');
+    
+    html += `<tr>
+      <td class="col-metric">${key}</td>
+      <td class="col-session1">${v1}</td>
+      <td class="col-session2">${v2}</td>
+      <td class="col-diff"><span class="${diffClass}">${diff}</span></td>
+    </tr>`;
+  });
+  
+  document.getElementById('kpiComparison').innerHTML = html;
+}
+
+function compareDistribution() {
+  const getDistribution = (data) => {
+    const rsrps = data.map(d => d.rsrp).filter(v => !isNaN(v));
+    const ranges = {
+      '> -75 dBm': 0,
+      '-75 to -85 dBm': 0,
+      '-85 to -95 dBm': 0,
+      '-95 to -105 dBm': 0,
+      '-105 to -115 dBm': 0,
+      '< -115 dBm': 0,
+    };
+    
+    rsrps.forEach(r => {
+      if (r > -75) ranges['> -75 dBm']++;
+      else if (r >= -85) ranges['-75 to -85 dBm']++;
+      else if (r >= -95) ranges['-85 to -95 dBm']++;
+      else if (r >= -105) ranges['-95 to -105 dBm']++;
+      else if (r >= -115) ranges['-105 to -115 dBm']++;
+      else ranges['< -115 dBm']++;
+    });
+    
+    return ranges;
+  };
+
+  const d1 = getDistribution(SESSION1_DATA);
+  const d2 = getDistribution(SESSION2_DATA);
+
+  let html = '';
+  Object.keys(d1).forEach(range => {
+    const c1 = d1[range];
+    const c2 = d2[range];
+    const p1 = (c1 / SESSION1_DATA.length * 100).toFixed(1);
+    const p2 = (c2 / SESSION2_DATA.length * 100).toFixed(1);
+    
+    html += `<tr>
+      <td class="col-metric">${range}</td>
+      <td class="col-session1">${c1} (${p1}%)</td>
+      <td class="col-session2">${c2} (${p2}%)</td>
+    </tr>`;
+  });
+  
+  document.getElementById('distComparison').innerHTML = html;
+}
+
+function compareCells() {
+  const getCellDist = (data) => {
+    const cells = {};
+    data.forEach(d => {
+      if (d.cellname) cells[d.cellname] = (cells[d.cellname] || 0) + 1;
+    });
+    return Object.entries(cells)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, count]) => `${name}: ${count}`)
+      .join('<br>');
+  };
+
+  document.getElementById('cellDist1').innerHTML = getCellDist(SESSION1_DATA) || 'N/A';
+  document.getElementById('cellDist2').innerHTML = getCellDist(SESSION2_DATA) || 'N/A';
+}
+
+function compareEvents() {
+  const s1_events = SESSION1_DATA.filter(d => d.type || d.typeCategory).slice(0, 5);
+  const s2_events = SESSION2_DATA.filter(d => d.type || d.typeCategory).slice(0, 5);
+  
+  if (!s1_events.length && !s2_events.length) return;
+  
+  document.getElementById('eventsSection').style.display = 'block';
+  
+  const renderEvents = (events) => {
+    return events.map(e => `
+      <div class="event-card">
+        <div class="event-type">${e.type || e.typeCategory}</div>
+        <div class="event-info">
+          ${e.timeDisp || e.time ? `<div>⏱ ${e.timeDisp || e.time}</div>` : ''}
+          ${e.fromCell ? `<div>From: ${e.fromCell}</div>` : ''}
+          ${e.toCell ? `<div>To: ${e.toCell}</div>` : ''}
+          ${e.rsrp ? `<div>RSRP: ${e.rsrp}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+  };
+  
+  document.getElementById('session1Events').innerHTML = renderEvents(s1_events) || '<span style="color:var(--text3)">No events</span>';
+  document.getElementById('session2Events').innerHTML = renderEvents(s2_events) || '<span style="color:var(--text3)">No events</span>';
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  if (!loadSession1()) {
+    document.getElementById('session1Info').innerHTML = '<span style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Tidak ada sesi aktif. Buka dashboard terlebih dahulu.</span>';
+  }
+});
+</script>
+
+</body>
+</html>
