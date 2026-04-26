@@ -255,6 +255,7 @@ p.doc-p strong{color:var(--text);font-weight:600}
       <a class="sidebar-item" href="#cell-churn"><span class="sidebar-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span> Cell Churn</a>
       <a class="sidebar-item" href="#throughput-corr"><span class="sidebar-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span> Throughput Correlation</a>
       <a class="sidebar-item" href="#site-view"><span class="sidebar-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 16.1C1 12.2 1 5.8 4.9 1.9"/><path d="M7.8 4.7a6.14 6.14 0 0 0-.8 7.5"/><circle cx="12" cy="9" r="2"/><path d="M16.2 4.8c2 2 2.26 5.11.8 7.47"/><path d="M19.1 1.9a10.75 10.75 0 0 1 0 15.2"/><line x1="12" y1="9" x2="12" y2="22"/></svg></span> Site-based View</a>
+      <a class="sidebar-item" href="#pci-conflict"><span class="sidebar-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v6"/><path d="M12 17v6"/><path d="M4.22 4.22l4.24 4.24"/><path d="M15.54 15.54l4.24 4.24"/><path d="M1 12h6"/><path d="M17 12h6"/></svg></span> PCI Mod-3 Conflict</a>
     </div>
 
     <div class="sidebar-group">
@@ -689,6 +690,11 @@ p.doc-p strong{color:var(--text);font-weight:600}
           <div class="feat-title">Site-based View</div>
           <div class="feat-desc">Agregasi KPI per eNodeB/site untuk identifikasi site bermasalah secara cepat.</div>
         </div>
+        <div class="feat-card" style="border-left:3px solid #a78bfa">
+          <div class="feat-icon" style="color:#a78bfa"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v6"/><path d="M12 17v6"/><path d="M4.22 4.22l4.24 4.24"/><path d="M15.54 15.54l4.24 4.24"/><path d="M1 12h6"/><path d="M17 12h6"/></svg></div>
+          <div class="feat-title">PCI Mod-3 Conflict</div>
+          <div class="feat-desc">Deteksi potensi PSS collision antar sel berdasarkan PCI mod-3 + spatial proximity di drive route.</div>
+        </div>
       </div>
 
       <div class="callout callout-info">
@@ -973,6 +979,128 @@ p.doc-p strong{color:var(--text);font-weight:600}
     </section>
 
 
+    <!-- PCI MOD-3 CONFLICT -->
+    <section class="doc-section" id="pci-conflict">
+      <h2 class="section-title">PCI Mod-3 Conflict Analysis</h2>
+      <p class="section-subtitle">Deteksi potensi konflik Primary Synchronization Sequence antar sel berdasarkan data drive test</p>
+
+      <h3 class="subsection-title">Dasar Teori</h3>
+      <p class="doc-p">
+        Setiap sel LTE memiliki <strong>Physical Cell Identity (PCI)</strong> dengan rentang 0–503. Identitas ini bukan sekadar label — secara fisik PCI mengontrol bentuk sinyal sinkronisasi yang dipancarkan sel. Per spesifikasi 3GPP TS 36.211, PCI dipecah jadi dua komponen:
+      </p>
+      <div class="callout callout-info">
+        <div class="callout-title">Dekomposisi PCI</div>
+        <strong>PCI = 3 × N<sub>ID</sub><sup>(1)</sup> + N<sub>ID</sub><sup>(2)</sup></strong><br>
+        Di mana <strong>N<sub>ID</sub><sup>(2)</sup> = PCI mod 3</strong> menentukan Primary Synchronization Sequence (PSS) — tiga kemungkinan sequence Zadoff-Chu yang ditransmisikan sel. <strong>N<sub>ID</sub><sup>(1)</sup> = ⌊PCI / 3⌋</strong> (rentang 0–167) menentukan Secondary Synchronization Sequence (SSS).
+      </div>
+      <p class="doc-p">
+        Konsekuensinya: dua sel dengan <strong>PCI mod 3 yang sama</strong> mentransmisikan PSS yang sama. Kalau coverage keduanya overlap di suatu area, UE saat initial cell search bisa mendeteksi PSS yang sama dari dua arah dan kebingungan menentukan timing sinkronisasi yang benar — fenomena ini disebut <strong>PSS collision</strong> atau <strong>PCI mod-3 conflict</strong>.
+      </p>
+
+      <h3 class="subsection-title">Mengapa Ini Penting</h3>
+      <p class="doc-p">
+        PCI mod-3 conflict berdampak pada beberapa aspek kinerja jaringan:
+      </p>
+      <table class="param-table">
+        <thead><tr><th>Dampak</th><th>Mekanisme</th></tr></thead>
+        <tbody>
+          <tr><td>Initial Access Failure</td><td>UE yang baru menyala di area konflik bisa salah-pilih sel saat scan PSS, menyebabkan PRACH attempt ke sel yang sebenarnya bukan yang terkuat.</td></tr>
+          <tr><td>PRACH Preamble Collision</td><td>Random access preamble dari multiple UE bisa diterima oleh sel yang salah, menurunkan RACH success rate.</td></tr>
+          <tr><td>CRS Interference</td><td>Cell-specific Reference Signal (CRS) dari dua sel dengan PCI mod-3 sama saling interfere di subframe yang sama, menurunkan SINR efektif.</td></tr>
+          <tr><td>Handover Failure</td><td>Saat measurement gap, UE bisa salah-identifikasi target cell, menyebabkan HO ke sel yang tidak diharapkan atau HO failure.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-warn">
+        <div class="callout-title">Aturan Industri Umum</div>
+        Dalam planning RF profesional (Atoll, Asset, MapInfo Pro), constraint umum: <strong>tidak boleh ada 2 cell yang share PCI mod 3 dalam neighbor list yang sama</strong>. Untuk area yang lebih rapat (urban dense), beberapa operator memperketat constraint ke <strong>PCI mod 6</strong> atau bahkan <strong>mod 30</strong> untuk koordinasi SRS (Sounding Reference Signal) di sektor tetangga.
+      </div>
+
+      <h3 class="subsection-title">Cara Kerja Algoritma Cakra</h3>
+      <p class="doc-p">
+        Cakra mendeteksi <em>kandidat</em> PCI mod-3 conflict dari data drive test serving cell saja — tanpa neighbor list resmi atau scanner data. Pendekatan ini heuristik dan bukan ground truth, tapi cukup untuk flag area yang perlu diverifikasi lebih lanjut dengan tool planning.
+      </p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Ekstrak (cellname, PCI) per sel</div>
+            <div class="step-desc">Untuk setiap unique <span class="inline-code">cellname</span>, tentukan PCI yang konsisten muncul di drive test. Sel dengan kurang dari 5 observasi di-filter karena mungkin noise atau handover singkat.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Sliding proximity window (8 sample)</div>
+            <div class="step-desc">Iterasi seluruh data point. Untuk tiap point, periksa 7 point sebelumnya — kalau ditemukan dua cell berbeda yang share <span class="inline-code">PCI mod 3</span>, increment counter pasangan tersebut. Window 8 sample ≈ 8 detik atau ~80 meter di kecepatan 36 km/h, proxy yang masuk akal untuk "spatial proximity".</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Filter: PCI berbeda, cellname berbeda</div>
+            <div class="step-desc">Pasangan dengan PCI sama di-skip (itu cell yang sama, bukan konflik). Pasangan dengan cellname sama juga di-skip. Yang dihitung hanya benar-benar dua cell distinct yang share PSS.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Ranking by occurrence</div>
+            <div class="step-desc">Pasangan diurutkan berdasarkan jumlah ko-observasi. Frekuensi tinggi = area konflik diamati berulang kali = prioritas verifikasi tinggi. Frekuensi rendah (1–2 kali) bisa cuma kebetulan saat handover normal antar serving cell yang ngga overlap signifikan.</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">Distribusi Mod-3 (Health Check)</h3>
+      <p class="doc-p">
+        Selain pasangan konflik, panel menampilkan distribusi PCI yang ditemukan ke 3 grup mod-3 (0, 1, 2). Idealnya merata ~33% per grup karena planning yang baik menyeimbangkan beban PSS. Distribusi yang sangat skewed (misal 60-20-20) bisa indikasi:
+      </p>
+      <ul style="font-size:13px;color:var(--text2);line-height:1.8;padding-left:20px">
+        <li>Drive test belum representatif (rute terbatas) — bukan masalah planning</li>
+        <li>Operator pakai PCI assignment scheme tertentu yang memang skewed (misal reserved range untuk macro vs small cell)</li>
+        <li>Planning legacy yang belum di-rebalance setelah ekspansi jaringan</li>
+      </ul>
+
+      <h3 class="subsection-title">Persyaratan Data</h3>
+      <p class="doc-p">
+        Fitur ini butuh kolom <span class="inline-code">PCI</span> di file log drive test. Jika tidak tersedia, panel menampilkan empty state dengan instruksi enable kolom PCI. Cara mengaktifkan:
+      </p>
+      <table class="param-table">
+        <thead><tr><th>Tool</th><th>Cara Enable Kolom PCI</th></tr></thead>
+        <tbody>
+          <tr><td>G-NetTrack Pro</td><td>Settings → Logging → Export Columns → centang <span class="inline-code">PCI</span> atau <span class="inline-code">Phys Cell ID</span></td></tr>
+          <tr><td>TEMS Investigation</td><td>Default kolom export biasanya sudah include PCI. Cek di Configuration → Output Columns → kategori "Cell Info".</td></tr>
+          <tr><td>NEMO Outdoor / Handy</td><td>Pilih template export yang include "LTE Serving Cell" — kolom PCI / Phys Cell ID otomatis included.</td></tr>
+          <tr><td>SIGMON</td><td>Kolom PCI tergantung firmware version. Cek dokumentasi tool untuk konfirmasi.</td></tr>
+        </tbody>
+      </table>
+      <p class="doc-p">
+        Cakra mendukung berbagai variasi nama header: <span class="inline-code">PCI</span>, <span class="inline-code">PCI Serving</span>, <span class="inline-code">Phys Cell ID</span>, <span class="inline-code">PhysCellID</span>, <span class="inline-code">LTE PCI</span>, <span class="inline-code">PSC</span> (legacy 3G). Jika nama kolom Anda berbeda, parser bisa di-extend di <span class="inline-code">resolveLtePci()</span> atau di array kandidat di parser TEMS/NEMO/SIGMON.
+      </p>
+
+      <h3 class="subsection-title">Interpretasi Hasil & Tindak Lanjut</h3>
+      <table class="param-table">
+        <thead><tr><th>Pasangan dengan</th><th>Tindak Lanjut</th></tr></thead>
+        <tbody>
+          <tr><td>Co-observed > 20 kali</td><td><strong>Prioritas tinggi:</strong> verifikasi di tool planning. Kalau memang neighbor langsung dengan coverage overlap, evaluasi reassignment PCI salah satu sel.</td></tr>
+          <tr><td>Co-observed 8–20 kali</td><td>Prioritas sedang. Cek apakah co-observed terjadi di area handover normal (bisa false positive) atau di area static yang harusnya served oleh satu sel saja.</td></tr>
+          <tr><td>Co-observed 3–7 kali</td><td>Bisa false positive dari handover natural. Worth dicek sekilas tapi bukan prioritas.</td></tr>
+          <tr><td>Co-observed 1–2 kali</td><td>Hampir pasti false positive dari boundary handover. Abaikan.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-warn">
+        <div class="callout-title">Batasan Heuristik Drive Test</div>
+        Algoritma ini <strong>tidak</strong> melihat data measurement neighbor cell aktual (yang dimiliki tool scanner profesional seperti R&S TSMA/TSME atau PCTel SeeGull). Beberapa skenario yang tidak terdeteksi: (1) sel dengan PCI mod-3 sama yang overlap tapi tidak pernah jadi serving di rute drive test, (2) konflik di indoor / area yang tidak dilewati rute, (3) konflik dengan small cell / repeater yang tidak muncul di serving cell list. Untuk audit PCI yang komprehensif, gunakan tool planning resmi yang membaca neighbor list dari OSS/OMC.
+      </div>
+
+      <h3 class="subsection-title">PCI Mod-30 (Catatan Lanjutan)</h3>
+      <p class="doc-p">
+        Selain mod-3 (PSS), industri juga mempertimbangkan <strong>PCI mod 30</strong> untuk koordinasi <em>Sounding Reference Signal</em> (SRS) cyclic shift. Cell dengan PCI mod-30 sama berbagi base sequence SRS, yang bisa menyebabkan SRS interference saat UE di kedua sel transmit SRS bersamaan di subframe yang sama. Cakra saat ini hanya menganalisis mod-3 — analisis mod-30 mungkin ditambahkan di rilis berikutnya jika ada kebutuhan dari user.
+      </p>
+    </section>
+
+
     <!-- STANDAR KPI -->
     <section class="doc-section" id="standar-kpi">
       <h2 class="section-title">Standar KPI</h2>
@@ -1116,6 +1244,7 @@ p.doc-p strong{color:var(--text);font-weight:600}
     <a class="otp-item" href="#cell-churn">Cell Churn</a>
     <a class="otp-item" href="#throughput-corr">Throughput Corr.</a>
     <a class="otp-item" href="#site-view">Site View</a>
+    <a class="otp-item" href="#pci-conflict">PCI Mod-3</a>
     <a class="otp-item" href="#standar-kpi">Standar KPI</a>
     <a class="otp-item" href="#export">Export</a>
     <a class="otp-item" href="#pwa">PWA</a>
