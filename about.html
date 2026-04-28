@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+<script>
+(function(){
+  var ref = document.referrer;
+  var sameOrigin = ref && (ref.indexOf(location.hostname) !== -1 || location.hostname === "localhost" || location.hostname === "");
+  if (!sameOrigin) {
+    location.replace("index.html");
+  }
+})();
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tentang Cakra — Drive Test Intelligence</title>
