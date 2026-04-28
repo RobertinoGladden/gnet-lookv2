@@ -120,7 +120,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 </head>
 <body>
 <script>
-(function(){var s=localStorage.getItem('cakra_theme')||'system';var t=s==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):s;document.documentElement.setAttribute('data-theme',t)})();
+(function(){var s=sessionStorage.getItem('cakra_theme')||'system';var t=s==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):s;document.documentElement.setAttribute('data-theme',t)})();
 </script>
 
 <nav class="nav">
@@ -220,8 +220,8 @@ var TICONS = [
   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'
 ];
 var tIdx = 0;
-function initTheme(){var s=localStorage.getItem('cakra_theme')||'system';tIdx=THEMES.indexOf(s);if(tIdx<0)tIdx=0;applyTheme()}
-function cycleTheme(){tIdx=(tIdx+1)%THEMES.length;localStorage.setItem('cakra_theme',THEMES[tIdx]);applyTheme()}
+function initTheme(){var s=sessionStorage.getItem('cakra_theme')||'system';tIdx=THEMES.indexOf(s);if(tIdx<0)tIdx=0;applyTheme()}
+function cycleTheme(){tIdx=(tIdx+1)%THEMES.length;sessionStorage.setItem('cakra_theme',THEMES[tIdx]);applyTheme()}
 function applyTheme(){var t=THEMES[tIdx];if(t==='system')t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);var b=document.getElementById('themeBtn');if(b)b.innerHTML=TICONS[tIdx]}
 
 // ─── METRICS ───

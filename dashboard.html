@@ -1065,7 +1065,7 @@ body {
 </style>
 <script>
 // Inline theme preset (prevents flash) — synced with cakra_theme key
-(function(){var s=localStorage.getItem('cakra_theme')||'system';var t=s==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):s;document.documentElement.setAttribute('data-theme',t)})();
+(function(){var s=sessionStorage.getItem('cakra_theme')||'system';var t=s==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):s;document.documentElement.setAttribute('data-theme',t)})();
 </script>
 </head>
 <body class="dashboard-page">
@@ -1697,14 +1697,14 @@ const DASH_ICONS  = [
 let dashThemeIdx = 0;
 
 function initThemeDash() {
-  const saved = localStorage.getItem('cakra_theme') || 'system';
+  const saved = sessionStorage.getItem('cakra_theme') || 'system';
   dashThemeIdx = DASH_THEMES.indexOf(saved);
   if (dashThemeIdx < 0) dashThemeIdx = 0;
   applyThemeDash();
 }
 function cycleThemeDash() {
   dashThemeIdx = (dashThemeIdx + 1) % DASH_THEMES.length;
-  localStorage.setItem('cakra_theme', DASH_THEMES[dashThemeIdx]);
+  sessionStorage.setItem('cakra_theme', DASH_THEMES[dashThemeIdx]);
   applyThemeDash();
 }
 function applyThemeDash() {

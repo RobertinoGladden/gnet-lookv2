@@ -1,4 +1,4 @@
-# CAKRA v2.0.1
+# CAKRA v2
 
 **Drive Test Intelligence** untuk RF Engineer — analisis LTE & 5G NR dari G-NetTrack Pro, TEMS Investigation, NEMO Outdoor, NEMO Handy, dan SIGMON. Berjalan sepenuhnya sebagai web app statis langsung di browser, tanpa instalasi dan tanpa backend.
 

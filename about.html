@@ -134,7 +134,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 </style>
 <script>
 // Inline theme preset (prevents flash) — synced with cakra_theme key
-(function(){var s=localStorage.getItem('cakra_theme')||'system';var t=s==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):s;document.documentElement.setAttribute('data-theme',t)})();
+(function(){var s=sessionStorage.getItem('cakra_theme')||'system';var t=s==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):s;document.documentElement.setAttribute('data-theme',t)})();
 </script>
 </head>
 <body>
@@ -352,11 +352,11 @@ function applyTheme(){
 }
 function cycleTheme(){
   themeIdx = (themeIdx + 1) % THEMES.length;
-  localStorage.setItem('cakra_theme', THEMES[themeIdx]);
+  sessionStorage.setItem('cakra_theme', THEMES[themeIdx]);
   applyTheme();
 }
 function initTheme(){
-  const saved = localStorage.getItem('cakra_theme') || 'system';
+  const saved = sessionStorage.getItem('cakra_theme') || 'system';
   themeIdx = THEMES.indexOf(saved);
   if (themeIdx < 0) themeIdx = THEMES.indexOf('system');
   applyTheme();
